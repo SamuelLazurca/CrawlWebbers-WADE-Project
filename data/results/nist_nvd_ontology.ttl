@@ -1,118 +1,94 @@
-@prefix vuln: <http://example.org/ontology/vulnerability#> .
+@prefix davi-nist: <http://davi.app/vocab/nist#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
 @prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
 
-# Ontology
-
-vuln:VulnerabilityOntology
+# --- ONTOLOGY METADATA ---
+davi-nist:NISTVulnerabilityOntology
     a owl:Ontology ;
-    rdfs:label "NVD Vulnerability Ontology"@en ;
-    dcterms:creator "Your Name" ;
-    dcterms:description "Ontology for CVE, CWE, CPE and CVSS from NIST NVD"@en ;
-    owl:versionInfo "1.0" .
+    rdfs:label "DaVi NIST Security Extensions"@en ;
+    dcterms:description "Extensions to Schema.org for NIST NVD Data (CVE, CWE, CPE, CVSS)"@en ;
+    owl:imports <http://schema.org/> .
 
-# Classes
+# --- REUSED STANDARD CLASSES ---
+# We use these directly. Declaring them here aids visualization tools.
 
-vuln:Vulnerability a owl:Class ;
-    rdfs:label "Vulnerability (CVE)"@en .
+schema:SoftwareApplication a owl:Class ;
+    rdfs:label "Software Application (CPE)"@en .
 
-vuln:Weakness a owl:Class ;
+schema:Organization a owl:Class ;
+    rdfs:label "Vendor / Organization"@en .
+
+schema:Thing a owl:Class ;
+    rdfs:label "Thing"@en .
+
+# --- CUSTOM CLASSES ---
+
+# Vulnerabilities are not standard in Schema.org, so we define them here.
+davi-nist:Vulnerability a owl:Class ;
+    rdfs:label "Vulnerability (CVE)"@en ;
+    rdfs:subClassOf schema:Thing ;
+    dcterms:description "A weakness in the computational logic (e.g., code) found in software and hardware components."@en .
+
+# Weaknesses (CWE) are hierarchical concepts, so they subclass SKOS Concept.
+davi-nist:Weakness a owl:Class ;
     rdfs:label "Weakness (CWE)"@en ;
     rdfs:subClassOf skos:Concept .
 
-vuln:Product a owl:Class ;
-    rdfs:label "Product (CPE)"@en .
-
-vuln:Vendor a owl:Class ;
-    rdfs:label "Vendor"@en .
-
-vuln:CVSSMetric a owl:Class ;
+# Metrics for scoring severity
+davi-nist:CVSSMetric a owl:Class ;
     rdfs:label "CVSS Metric"@en .
 
-vuln:SoftwareApplication a owl:Class ;
-    rdfs:label "Software Application"@en ;
-    rdfs:subClassOf vuln:Product .
+# --- CUSTOM PROPERTIES ---
 
-vuln:OperatingSystem a owl:Class ;
-    rdfs:label "Operating System"@en ;
-    rdfs:subClassOf vuln:Product .
+# Linking Vulnerability -> Software (Standardized Range)
+davi-nist:affectsSoftware a owl:ObjectProperty ;
+    rdfs:label "affects software"@en ;
+    rdfs:domain davi-nist:Vulnerability ;
+    rdfs:range schema:SoftwareApplication .
 
-vuln:HardwareDevice a owl:Class ;
-    rdfs:label "Hardware Device"@en ;
-    rdfs:subClassOf vuln:Product .
+# Linking Vulnerability -> Weakness (CWE)
+davi-nist:hasWeakness a owl:ObjectProperty ;
+    rdfs:label "has weakness"@en ;
+    rdfs:domain davi-nist:Vulnerability ;
+    rdfs:range davi-nist:Weakness ;
+    owl:inverseOf davi-nist:isWeaknessOf .
 
+davi-nist:isWeaknessOf a owl:ObjectProperty ;
+    rdfs:label "is weakness of"@en ;
+    rdfs:domain davi-nist:Weakness ;
+    rdfs:range davi-nist:Vulnerability .
 
-# Object Properties
+# CVSS Metrics
+davi-nist:hasCVSSMetric a owl:ObjectProperty ;
+    rdfs:label "has CVSS metric"@en ;
+    rdfs:domain davi-nist:Vulnerability ;
+    rdfs:range davi-nist:CVSSMetric .
 
-vuln:hasWeakness a owl:ObjectProperty ;
-    rdfs:domain vuln:Vulnerability ;
-    rdfs:range vuln:Weakness ;
-    owl:inverseOf vuln:isWeaknessOf ;
-    rdfs:label "has weakness"@en .
-
-vuln:isWeaknessOf a owl:ObjectProperty ;
-    rdfs:domain vuln:Weakness ;
-    rdfs:range vuln:Vulnerability ;
-    rdfs:label "is weakness of"@en .
-
-vuln:affectsProduct a owl:ObjectProperty ;
-    rdfs:domain vuln:Vulnerability ;
-    rdfs:range vuln:Product ;
-    owl:inverseOf vuln:isAffectedBy ;
-    rdfs:label "affects product"@en .
-
-vuln:isAffectedBy a owl:ObjectProperty ;
-    rdfs:domain vuln:Product ;
-    rdfs:range vuln:Vulnerability ;
-    rdfs:label "is affected by"@en .
-
-vuln:hasCVSSMetric a owl:ObjectProperty ;
-    rdfs:domain vuln:Vulnerability ;
-    rdfs:range vuln:CVSSMetric ;
-    owl:inverseOf vuln:measuresVulnerability ;
-    rdfs:label "has CVSS metric"@en .
-
-vuln:measuresVulnerability a owl:ObjectProperty ;
-    rdfs:domain vuln:CVSSMetric ;
-    rdfs:range vuln:Vulnerability ;
-    rdfs:label "measures vulnerability"@en .
-
-vuln:vendor a owl:ObjectProperty ;
-    rdfs:domain vuln:Product ;
-    rdfs:range vuln:Vendor ;
-    rdfs:label "has vendor"@en .
-
-vuln:providesProduct a owl:ObjectProperty ;
-    rdfs:domain vuln:Vendor ;
-    rdfs:range vuln:Product ;
-    owl:inverseOf vuln:vendor ;
-    rdfs:label "provides product"@en .
-
-# Datatype Properties
-
-vuln:baseScore a owl:DatatypeProperty ;
-    rdfs:domain vuln:CVSSMetric ;
+davi-nist:baseScore a owl:DatatypeProperty ;
+    rdfs:label "base score"@en ;
+    rdfs:domain davi-nist:CVSSMetric ;
     rdfs:range xsd:decimal .
 
-vuln:vectorString a owl:DatatypeProperty ;
-    rdfs:domain vuln:CVSSMetric ;
+davi-nist:vectorString a owl:DatatypeProperty ;
+    rdfs:label "vector string"@en ;
+    rdfs:domain davi-nist:CVSSMetric ;
     rdfs:range xsd:string .
 
-vuln:productVersion a owl:DatatypeProperty ;
-    rdfs:domain vuln:Product ;
-    rdfs:range xsd:string .
+# --- LOGICAL AXIOMS (Inference) ---
 
-# Logical axioms (inference)
-
-vuln:affectsVendor a owl:ObjectProperty ;
-    rdfs:domain vuln:Vulnerability ;
-    rdfs:range vuln:Vendor ;
+# Inference Rule:
+# IF (Vulnerability A affects Software B) AND (Software B is manufactured by Vendor C)
+# THEN (Vulnerability A affects Vendor C)
+davi-nist:affectsVendor a owl:ObjectProperty ;
     rdfs:label "affects vendor"@en ;
+    rdfs:domain davi-nist:Vulnerability ;
+    rdfs:range schema:Organization ;
     owl:propertyChainAxiom (
-        vuln:affectsProduct
-        vuln:vendor
+        davi-nist:affectsSoftware
+        schema:manufacturer
     ) .
