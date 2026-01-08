@@ -1,0 +1,83 @@
+@prefix davi: <http://davi.app/vocab#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix schema: <http://schema.org/> .
+
+# --- ONTOLOGY METADATA ---
+davi:MovieLensOntology a owl:Ontology ;
+    rdfs:label "DaVi MovieLens Extensions"@en ;
+    dcterms:description "Ontology for MovieLens 20M Dataset extensions (Genome & Tagging)"@en ;
+    owl:imports <http://schema.org/> .
+
+# --- REUSED STANDARD CLASSES ---
+# We use these directly in the data, but declaring them here helps
+# visualization tools (like VOWL) understand the structure.
+
+schema:Movie a owl:Class ;
+    rdfs:label "Movie"@en .
+
+schema:Rating a owl:Class ;
+    rdfs:label "Rating Action"@en .
+
+schema:Person a owl:Class ;
+    rdfs:label "User / Person"@en .
+
+# --- CUSTOM CLASSES (Extensions) ---
+
+# Reified Class for Tagging (User <-> Movie)
+# Modeled as a sub-class of 'CreateAction' because the user is creating a tag
+davi:TagApplication a owl:Class ;
+    rdfs:label "Tag Application"@en ;
+    rdfs:subClassOf schema:CreateAction ;
+    dcterms:description "An event where a user applies a free-text tag to a movie"@en .
+
+# Genome Tag Definition (Specific to MovieLens Project)
+davi:GenomeTag a owl:Class ;
+    rdfs:label "Genome Tag"@en ;
+    dcterms:description "A controlled vocabulary tag from the Tag Genome"@en .
+
+# Reified Class for Genome Relevance (Movie <-> GenomeTag)
+davi:GenomeRelevance a owl:Class ;
+    rdfs:label "Genome Relevance Prediction"@en ;
+    dcterms:description "The calculated relevance of a Genome Tag to a specific Movie"@en .
+
+# --- PROPERTIES ---
+
+# Note: We do NOT redefine properties for Title, Genre, Rating Value, or Timestamp.
+# We use schema:name, schema:genre, schema:ratingValue, schema:datePublished.
+
+# Custom Properties for Tagging
+davi:tagContent a owl:DatatypeProperty ;
+    rdfs:label "Tag Text"@en ;
+    rdfs:domain davi:TagApplication ;
+    rdfs:range xsd:string .
+
+# Custom Properties for Genome Relevance
+davi:isRelevantTo a owl:ObjectProperty ;
+    rdfs:label "is relevant to"@en ;
+    rdfs:domain davi:GenomeRelevance ;
+    rdfs:range schema:Movie .
+
+davi:hasGenomeTag a owl:ObjectProperty ;
+    rdfs:label "has genome tag"@en ;
+    rdfs:domain davi:GenomeRelevance ;
+    rdfs:range davi:GenomeTag .
+
+davi:relevanceScore a owl:DatatypeProperty ;
+    rdfs:label "relevance score"@en ;
+    rdfs:domain davi:GenomeRelevance ;
+    rdfs:range xsd:decimal .
+
+# Link existing properties for better inference (Optional but recommended)
+davi:taggedBy a owl:ObjectProperty ;
+    rdfs:subPropertyOf schema:agent ;
+    rdfs:domain davi:TagApplication ;
+    rdfs:range schema:Person .
+
+davi:tagsMovie a owl:ObjectProperty ;
+    rdfs:subPropertyOf schema:object ;
+    rdfs:domain davi:TagApplication ;
+    rdfs:range schema:Movie .
