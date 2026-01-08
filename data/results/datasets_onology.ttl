@@ -1,0 +1,183 @@
+@prefix : <http://example.org/ontology/vulnerability#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix schema: <http://schema.org/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# CLASSES
+
+:Dataset a owl:Class ;
+    rdfs:label "Dataset"@en ;
+    rdfs:subClassOf schema:Dataset .
+
+:UserProfile a owl:Class ;
+    rdfs:label "User Profile"@en ;
+    rdfs:subClassOf schema:Person .
+
+:Visualization a owl:Class ;
+    rdfs:label "Visualization"@en .
+
+:VisualizationOption a owl:Class ;
+    rdfs:label "Visualization Option"@en .
+
+# OBJECT PROPERTIES
+
+:uploadedBy a owl:ObjectProperty ;
+    rdfs:label "uploaded by"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range :UserProfile .
+
+:allowsVisualization a owl:ObjectProperty ;
+    rdfs:label "allows visualization"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range :Visualization .
+
+:hasOption a owl:ObjectProperty ;
+    rdfs:label "has option"@en ;
+    rdfs:domain :Visualization ;
+    rdfs:range :VisualizationOption .
+
+# DATATYPE PROPERTIES
+
+:datasetURL a owl:DatatypeProperty ;
+    rdfs:label "Dataset URL"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:anyURI .
+
+:infoHash a owl:DatatypeProperty ;
+    rdfs:label "InfoHash"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:string .
+
+:datasetID a owl:DatatypeProperty ;
+    rdfs:label "Dataset ID"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:string .
+
+:sizeInBytes a owl:DatatypeProperty ;
+    rdfs:label "Size in bytes"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:integer .
+
+:addedDate a owl:DatatypeProperty ;
+    rdfs:label "Added date"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:dateTime .
+
+:numberOfFiles a owl:DatatypeProperty ;
+    rdfs:label "Number of files"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:integer .
+
+:datasetType a owl:DatatypeProperty ;
+    rdfs:label "Dataset type"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:string .
+
+:numberOfDownloads a owl:DatatypeProperty ;
+    rdfs:label "Number of downloads"@en ;
+    rdfs:domain :Dataset ;
+    rdfs:range xsd:integer .
+
+:visualizationName a owl:DatatypeProperty ;
+    rdfs:label "Visualization name"@en ;
+    rdfs:domain :Visualization ;
+    rdfs:range xsd:string .
+
+:optionName a owl:DatatypeProperty ;
+    rdfs:label "Option name"@en ;
+    rdfs:domain :VisualizationOption ;
+    rdfs:range xsd:string .
+
+:optionFields a owl:DatatypeProperty ;
+    rdfs:label "Fields selectable for option"@en ;
+    rdfs:domain :VisualizationOption ;
+    rdfs:range xsd:string .
+
+# DATASET INSTANCES
+
+:dataset_nist_cve a :Dataset ;
+    :datasetID "5539" ;
+    rdfs:label "nist-national-vulnerability-database-cve-cpe-cwe"@en ;
+    :datasetURL <https://academictorrents.com/details/fe623a0bbd13e8f152ea2317f151d8d3719ba96b/> ;
+    :infoHash "fe623a0bbd13e8f152ea2317f151d8d3719ba96b" ;
+    :sizeInBytes 1458628411 ;
+    :addedDate "2025-06-01T12:00:00Z"^^xsd:dateTime ;
+    :datasetType "multi" ;
+    :numberOfFiles 25183 ;
+    :numberOfDownloads 450 ;
+    :uploadedBy :user_tripleshrimp ;
+    :allowsVisualization :viz_filtering, :viz_trends, :viz_layered, :viz_comparing .
+
+:user_tripleshrimp a :UserProfile ;
+    rdfs:label "tripleshrimp"@en ;
+    schema:url <https://academictorrents.com/userdetails.php?id=23855> .
+
+:dataset_movielens_20m a :Dataset ;
+    :datasetID "3530" ;
+    rdfs:label "MovieLens 20M Dataset"@en ;
+    :datasetURL <https://academictorrents.com/details/296054417b4d8eeeb4c7b1c842570bf792ee4d14/> ;
+    :infoHash "296054417b4d8eeeb4c7b1c842570bf792ee4d14" ;
+    :sizeInBytes 198702078 ;
+    :addedDate "2016-12-16T12:00:00Z"^^xsd:dateTime ;
+    :datasetType "single" ;
+    :numberOfFiles 1 ;
+    :numberOfDownloads 2257 ;
+    :uploadedBy :user_joecohen ;
+    :allowsVisualization :viz_filtering, :viz_trends, :viz_layered, :viz_comparing .
+
+:user_joecohen a :UserProfile ;
+    rdfs:label "joecohen"@en ;
+    schema:url <https://academictorrents.com/userdetails.php?id=14> .
+
+# VISUALIZATIONS
+
+:viz_filtering a :Visualization ;
+    :visualizationName "Intelligent Filtering" ;
+    :hasOption :filter_by_cwe, :filter_by_cpe .
+
+:filter_by_cwe a :VisualizationOption ;
+    :optionName "Filter by CWE" ;
+    :optionFields "CWE ID, CWE Name" .
+
+:filter_by_cpe a :VisualizationOption ;
+    :optionName "Filter by CPE" ;
+    :optionFields "Product Name, Vendor, Version" .
+
+:viz_trends a :Visualization ;
+    :visualizationName "Trends Computation" ;
+    :hasOption :trend_by_year, :trend_by_cvss .
+
+:trend_by_year a :VisualizationOption ;
+    :optionName "Trend by Year" ;
+    :optionFields "Published Date" .
+
+:trend_by_cvss a :VisualizationOption ;
+    :optionName "Trend by CVSS Score" ;
+    :optionFields "CVSS Base Score, CVSS Version" .
+
+:viz_layered a :Visualization ;
+    :visualizationName "Layered Visualizations" ;
+    :hasOption :layer_by_vendor, :layer_by_weakness .
+
+:layer_by_vendor a :VisualizationOption ;
+    :optionName "Layer by Vendor" ;
+    :optionFields "Vendor, Product" .
+
+:layer_by_weakness a :VisualizationOption ;
+    :optionName "Layer by Weakness" ;
+    :optionFields "CWE, CVE" .
+
+:viz_comparing a :Visualization ;
+    :visualizationName "Comparing Tasks" ;
+    :hasOption :compare_products, :compare_vulnerabilities .
+
+:compare_products a :VisualizationOption ;
+    :optionName "Compare Products" ;
+    :optionFields "Product Name, Version, Vendor" .
+
+:compare_vulnerabilities a :VisualizationOption ;
+    :optionName "Compare Vulnerabilities" ;
+    :optionFields "CVE ID, CWE, CVSS Score" .

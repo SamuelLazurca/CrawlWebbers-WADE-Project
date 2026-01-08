@@ -1,0 +1,118 @@
+@prefix vuln: <http://example.org/ontology/vulnerability#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# Ontology
+
+vuln:VulnerabilityOntology
+    a owl:Ontology ;
+    rdfs:label "NVD Vulnerability Ontology"@en ;
+    dcterms:creator "Your Name" ;
+    dcterms:description "Ontology for CVE, CWE, CPE and CVSS from NIST NVD"@en ;
+    owl:versionInfo "1.0" .
+
+# Classes
+
+vuln:Vulnerability a owl:Class ;
+    rdfs:label "Vulnerability (CVE)"@en .
+
+vuln:Weakness a owl:Class ;
+    rdfs:label "Weakness (CWE)"@en ;
+    rdfs:subClassOf skos:Concept .
+
+vuln:Product a owl:Class ;
+    rdfs:label "Product (CPE)"@en .
+
+vuln:Vendor a owl:Class ;
+    rdfs:label "Vendor"@en .
+
+vuln:CVSSMetric a owl:Class ;
+    rdfs:label "CVSS Metric"@en .
+
+vuln:SoftwareApplication a owl:Class ;
+    rdfs:label "Software Application"@en ;
+    rdfs:subClassOf vuln:Product .
+
+vuln:OperatingSystem a owl:Class ;
+    rdfs:label "Operating System"@en ;
+    rdfs:subClassOf vuln:Product .
+
+vuln:HardwareDevice a owl:Class ;
+    rdfs:label "Hardware Device"@en ;
+    rdfs:subClassOf vuln:Product .
+
+
+# Object Properties
+
+vuln:hasWeakness a owl:ObjectProperty ;
+    rdfs:domain vuln:Vulnerability ;
+    rdfs:range vuln:Weakness ;
+    owl:inverseOf vuln:isWeaknessOf ;
+    rdfs:label "has weakness"@en .
+
+vuln:isWeaknessOf a owl:ObjectProperty ;
+    rdfs:domain vuln:Weakness ;
+    rdfs:range vuln:Vulnerability ;
+    rdfs:label "is weakness of"@en .
+
+vuln:affectsProduct a owl:ObjectProperty ;
+    rdfs:domain vuln:Vulnerability ;
+    rdfs:range vuln:Product ;
+    owl:inverseOf vuln:isAffectedBy ;
+    rdfs:label "affects product"@en .
+
+vuln:isAffectedBy a owl:ObjectProperty ;
+    rdfs:domain vuln:Product ;
+    rdfs:range vuln:Vulnerability ;
+    rdfs:label "is affected by"@en .
+
+vuln:hasCVSSMetric a owl:ObjectProperty ;
+    rdfs:domain vuln:Vulnerability ;
+    rdfs:range vuln:CVSSMetric ;
+    owl:inverseOf vuln:measuresVulnerability ;
+    rdfs:label "has CVSS metric"@en .
+
+vuln:measuresVulnerability a owl:ObjectProperty ;
+    rdfs:domain vuln:CVSSMetric ;
+    rdfs:range vuln:Vulnerability ;
+    rdfs:label "measures vulnerability"@en .
+
+vuln:vendor a owl:ObjectProperty ;
+    rdfs:domain vuln:Product ;
+    rdfs:range vuln:Vendor ;
+    rdfs:label "has vendor"@en .
+
+vuln:providesProduct a owl:ObjectProperty ;
+    rdfs:domain vuln:Vendor ;
+    rdfs:range vuln:Product ;
+    owl:inverseOf vuln:vendor ;
+    rdfs:label "provides product"@en .
+
+# Datatype Properties
+
+vuln:baseScore a owl:DatatypeProperty ;
+    rdfs:domain vuln:CVSSMetric ;
+    rdfs:range xsd:decimal .
+
+vuln:vectorString a owl:DatatypeProperty ;
+    rdfs:domain vuln:CVSSMetric ;
+    rdfs:range xsd:string .
+
+vuln:productVersion a owl:DatatypeProperty ;
+    rdfs:domain vuln:Product ;
+    rdfs:range xsd:string .
+
+# Logical axioms (inference)
+
+vuln:affectsVendor a owl:ObjectProperty ;
+    rdfs:domain vuln:Vulnerability ;
+    rdfs:range vuln:Vendor ;
+    rdfs:label "affects vendor"@en ;
+    owl:propertyChainAxiom (
+        vuln:affectsProduct
+        vuln:vendor
+    ) .

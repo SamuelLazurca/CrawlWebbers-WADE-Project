@@ -1,0 +1,5 @@
+ML_20M/
+NIST_NVD/
+results/cve_rdf_batches/
+results/cpe_rdf_batches/
+results/cwe_rdf.ttl
