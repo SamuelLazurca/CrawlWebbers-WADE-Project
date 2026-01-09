@@ -31,11 +31,6 @@ export interface GraphEdge {
   target: string;
 }
 
-export interface Dataset {
-  id: string;
-  name: string;
-  description: string;
-  conceptCount: number;
-  lastUpdated: string;
-  status: 'active' | 'processing' | 'inactive';
+export interface ItemsResponse<T> {
+  items: T[];
 }

@@ -3,6 +3,7 @@ import { ChevronDown, Search, Filter, TrendingUp } from 'lucide-react';
 import { useFilterStore } from '../../stores/filterStore';
 import { mockFilterFacets } from '../../data/mockData';
 import clsx from 'clsx';
+import { DatasetSelector } from '../DatasetsSelector';
 
 export const ModernSidebar: React.FC = () => {
   const [expandedFacets, setExpandedFacets] = useState<Set<string>>(
@@ -40,7 +41,7 @@ export const ModernSidebar: React.FC = () => {
 
   return (
     <aside className='fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-r border-slate-800 flex flex-col shadow-2xl z-40'>
-      <div className='p-6 border-b border-slate-800 bg-gradient-to-b from-slate-900/50 to-transparent backdrop-blur-sm'>
+      <div className='p-6 bg-gradient-to-b from-slate-900/50 to-transparent backdrop-blur-sm'>
         <div className='flex items-center gap-3 mb-6'>
           <div className='w-10 h-10 bg-gradient-to-br from-cyan-400 to-emerald-400 rounded-xl flex items-center justify-center'>
             <Filter size={20} className='text-slate-950 font-bold' />
@@ -51,57 +52,7 @@ export const ModernSidebar: React.FC = () => {
           </div>
         </div>
 
-        <div className='relative group'>
-          <Search className='absolute left-3 top-3 text-slate-500 group-focus-within:text-emerald-400 transition size-4' />
-          <input
-            type='text'
-            placeholder='Search filters...'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className='w-full pl-10 pr-4 py-2.5 bg-slate-800/50 border border-slate-700 rounded-lg text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400 transition'
-          />
-        </div>
-
-        {filterCount > 0 && (
-          <div className='mt-3 flex items-center justify-between p-3 bg-emerald-500/10 border border-emerald-500/30 rounded-lg'>
-            <span className='text-sm text-emerald-300 font-medium flex items-center gap-2'>
-              <TrendingUp size={16} />
-              {filterCount} active filter{filterCount !== 1 ? 's' : ''}
-            </span>
-            <button
-              onClick={() => clearFilters()}
-              className='text-xs text-emerald-400 hover:text-emerald-300 font-medium transition'
-            >
-              Clear
-            </button>
-          </div>
-        )}
-      </div>
-
-      <div className='flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent'>
-        <div className='p-4 space-y-3'>
-          {filteredFacets.length === 0 ? (
-            <div className='text-center py-8'>
-              <p className='text-slate-400 text-sm'>
-                No filters match your search
-              </p>
-            </div>
-          ) : (
-            filteredFacets.map((facet) => (
-              <FacetGroup
-                key={facet.property}
-                facet={facet}
-                isExpanded={expandedFacets.has(facet.property)}
-                onToggle={() => toggleFacet(facet.property)}
-                selectedValues={
-                  selectedFilters.get(facet.property) || new Set()
-                }
-                onSelect={(value) => addFilter(facet.property, value)}
-                onDeselect={(value) => removeFilter(facet.property, value)}
-              />
-            ))
-          )}
-        </div>
+        <DatasetSelector />
       </div>
     </aside>
   );
