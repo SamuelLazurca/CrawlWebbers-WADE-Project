@@ -1,17 +1,24 @@
 from app.core.sparql import run_sparql
 from app.models.schemas import DatasetSchema, VisualizationModule, VisualizationOption
 
-
 def datasets_get_all_query() -> list[DatasetSchema]:
     query = """
-    SELECT ?ds ?id ?name ?desc ?url ?date
+    SELECT ?ds ?id ?name ?desc ?url ?date ?sizeBytes ?numFiles ?numDownloads ?uploadedBy ?uploadedByUrl
     WHERE {
         ?ds a davi-meta:Dataset ;
             dcterms:identifier ?id ;
             schema:name ?name ;
-            schema:description ?desc .
+            schema:description ?desc ;
+            davi-meta:sizeBytes ?sizeBytes ;
+            davi-meta:fileCount ?numFiles ;
+            davi-meta:downloadCount ?numDownloads .
         OPTIONAL { ?ds schema:url ?url }
         OPTIONAL { ?ds schema:dateCreated ?date }
+        OPTIONAL {
+            ?ds davi-meta:uploader ?uploader .
+            ?uploader schema:name ?uploadedBy .
+            OPTIONAL { ?uploader schema:url ?uploadedByUrl }
+        }
     }
     """
     results = run_sparql(query)
@@ -27,8 +34,13 @@ def datasets_get_all_query() -> list[DatasetSchema]:
             id=ds_id,
             name=row["name"]["value"],
             description=row["desc"]["value"],
-            download_url=row.get("url", {}).get("value"),
-            date_created=row.get("date", {}).get("value"),
+            url=row.get("url", {}).get("value"),
+            added_date=row.get("date", {}).get("value"),
+            size_in_bytes=int(row["sizeBytes"]["value"]),
+            number_of_files=int(row["numFiles"]["value"]),
+            number_of_downloads=int(row["numDownloads"]["value"]),
+            uploaded_by=row.get("uploadedBy", {}).get("value"),
+            uploaded_by_url=row.get("uploadedByUrl", {}).get("value"),
             supported_visualizations=viz_modules
         ))
 
@@ -36,8 +48,6 @@ def datasets_get_all_query() -> list[DatasetSchema]:
 
 
 def dataset_get_by_id_query(dataset_id: str) -> DatasetSchema | None:
-    # ... implementation similar to above, filtering by ?id ...
-    # For brevity, reusing the getAll logic, but in production optimize this.
     all_ds = datasets_get_all_query()
     for ds in all_ds:
         if ds.id == dataset_id:

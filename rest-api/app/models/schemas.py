@@ -27,9 +27,14 @@ class VisualizationModule(BaseModel):
 class DatasetSchema(BaseModel):
     id: str
     name: str
+    url: str
     description: str
-    download_url: Optional[str] = None
-    date_created: Optional[str] = None
+    size_in_bytes: int
+    number_of_files: int
+    number_of_downloads: int
+    added_date: Optional[str] = None
+    uploaded_by: Optional[str] = None
+    uploaded_by_url: Optional[str] = None
     supported_visualizations: List[VisualizationModule] = []
 
 
