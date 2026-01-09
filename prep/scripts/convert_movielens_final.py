@@ -5,8 +5,8 @@ import os
 # ================= CONFIGURATION =================
 TOP_N_MOVIES = 5000
 GENOME_THRESHOLD = 0.5
-INPUT_DIR = "data"
-OUTPUT_DIR = "output_ttl_final"
+INPUT_DIR = "D:/Master/Anul2Sem1/WADE/Project/davi/data/ML_20M"
+OUTPUT_DIR = "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/movielens"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # NAMESPACES & PREFIXES
@@ -52,7 +52,6 @@ def write_header(f):
     f.write(PREFIXES + "\n")
 
 
-# ================= STEP 1: MAPPING IDs =================
 def setup_movie_mapping():
     print("Step 1: Finding top movies and mapping IDs...")
 
@@ -83,7 +82,6 @@ def setup_movie_mapping():
     print(f"   Mapped {mapped_count} movies to valid IMDB IDs.")
 
 
-# ================= STEP 2: MOVIES (Schema.org) =================
 def process_movies():
     print("Step 2: Processing Movies...")
     movies_df = pd.read_csv(f"{INPUT_DIR}/movies.csv", dtype=str)
@@ -120,7 +118,6 @@ def process_movies():
 """)
 
 
-# ================= STEP 3: RATINGS =================
 def process_ratings():
     print("Step 3: Processing Ratings...")
 
@@ -158,11 +155,9 @@ def process_ratings():
 """)
             f.write("".join(buffer))
 
-            # Print summary
             print(f"   Added {added_count} ratings.")
 
 
-# ================= STEP 4: GENOME SCORES =================
 def process_genome():
     print("Step 4: Processing Genome Scores (Relevance > 0.5)...")
     reader = pd.read_csv(f"{INPUT_DIR}/genome-scores.csv", chunksize=500000, dtype=str)
@@ -198,7 +193,6 @@ def process_genome():
             f.write("".join(buffer))
 
 
-# ================= STEP 5: TAG METADATA =================
 def process_tags_metadata():
     print("Step 5: Processing Tag Definitions and User Tags...")
 

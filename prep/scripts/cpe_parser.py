@@ -160,7 +160,6 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
 
 
 if __name__ == "__main__":
-    # UPDATE PATHS AS NEEDED
     process_cpe_json_folders(
         "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CPE",
         "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_rdf_batches"
