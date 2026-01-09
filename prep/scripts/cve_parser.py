@@ -7,7 +7,7 @@ from urllib.parse import quote
 
 import py7zr
 from rdflib import Graph, Literal, RDF, URIRef, Namespace
-from rdflib.namespace import XSD, RDFS, DCTERMS
+from rdflib.namespace import XSD, DCTERMS
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("cve-to-rdf")
@@ -19,6 +19,8 @@ CPE = Namespace("https://nvd.nist.gov/products/cpe/detail/")
 CVSS = Namespace("https://www.first.org/cvss/")
 DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
 SCHEMA = Namespace("http://schema.org/")
+
+CPE_MAP_PATH = "nist/cpe_rdf_batches/cpe_map.json"
 
 
 def safe_uri(namespace, value):
@@ -49,7 +51,7 @@ def init_graph():
     return g
 
 
-def parse_cve_json(data, g):
+def parse_cve_json(data, g, cpe_map):
     cve_id = data.get("id")
     if not cve_id:
         return
@@ -96,9 +98,27 @@ def parse_cve_json(data, g):
     for cfg in data.get("configurations", []):
         for node in cfg.get("nodes", []):
             for match in node.get("cpeMatch", []):
-                cpe_id = match.get("matchCriteriaId")
+                criteria = match.get("criteria") or match.get("cpe23Uri") or match.get("cpe")
+                match_id = match.get("matchCriteriaId")
+                if not criteria and not match_id:
+                    continue
+
+                # Try exact resolution by canonical criteria string -> cpeNameId
+                cpe_id = cpe_map.get(criteria)
                 if cpe_id:
-                    g.add((cve_uri, DAVI_NIST.affectsSoftware, make_cpe_uri(cpe_id)))
+                    product_uri = make_cpe_uri(cpe_id)  # CPE_NS + UUID (existing resource)
+                    g.add((cve_uri, DAVI_NIST.affectsSoftware, product_uri))
+                    # keep traceability: include matchCriteriaId and criteria on the triple/resource
+                    if match_id:
+                        g.add((product_uri, DAVI_NIST.matchCriteriaId, Literal(match_id)))
+                else:
+                    # Not resolved via mapping: log and attach unresolved triple for later reconciliation
+                    if criteria:
+                        # attach the raw criteria string to CVE for debugging
+                        g.add((cve_uri, DAVI_NIST.unresolvedCriteria, Literal(criteria)))
+                    if match_id:
+                        g.add((cve_uri, DAVI_NIST.matchCriteriaId, Literal(match_id)))
+                    log.debug("Unresolved CPE criteria for CVE %s: %s", cve_id, criteria)
 
     # 7. References -> schema:url (or rdfs:seeAlso)
     for ref in data.get("references", []):
@@ -141,9 +161,18 @@ def process_all_cves(input_dir, output_dir):
     temp_dir = "_tmp_extract_cve"
     os.makedirs(temp_dir, exist_ok=True)
 
+    # load the CPE mapping (criteria -> cpeNameId)
+    try:
+        with open(CPE_MAP_PATH, "r", encoding="utf-8") as mf:
+            cpe_map = json.load(mf)
+        log.info("Loaded CPE mapping (%d entries) from %s", len(cpe_map), CPE_MAP_PATH)
+    except Exception as e:
+        log.error("Could not load CPE map: %s", e)
+        cpe_map = {}
+
     batch_idx = 0
 
-    for fname in sorted(os.listdir(input_dir)):
+    for fname in sorted(os.listdir(input_dir))[-3:]:
         if not fname.endswith(".7z"):
             continue
 
@@ -160,7 +189,7 @@ def process_all_cves(input_dir, output_dir):
                 for f in files:
                     if f.endswith(".json"):
                         with open(os.path.join(root, f), encoding="utf-8") as fh:
-                            parse_cve_json(json.load(fh), g)
+                            parse_cve_json(json.load(fh), g, cpe_map)
 
         except Exception as e:
             log.error(f"Error processing {fname}: {e}")
@@ -183,6 +212,6 @@ def process_all_cves(input_dir, output_dir):
 
 if __name__ == "__main__":
     process_all_cves(
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CVE",
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cve_rdf_batches"
+        "CVE",
+        "nist/cve_rdf_batches"
     )
