@@ -1,30 +1,4 @@
-import type { Concept, FilterFacet, ChartData, GraphNode, GraphEdge, Dataset } from '../types';
-export const mockDatasets: Dataset[] = [
-  {
-    id: 'wikidata',
-    name: 'Wikidata',
-    description: 'Free knowledge base',
-    conceptCount: 104_000_000,
-    lastUpdated: '2025-01-08',
-    status: 'active',
-  },
-  {
-    id: 'dbpedia',
-    name: 'DBpedia',
-    description: 'Structured data from Wikipedia',
-    conceptCount: 14_200_000,
-    lastUpdated: '2025-01-05',
-    status: 'active',
-  },
-  {
-    id: 'yago',
-    name: 'YAGO',
-    description: 'Yet Another Great Ontology',
-    conceptCount: 10_500_000,
-    lastUpdated: '2024-12-28',
-    status: 'processing',
-  },
-];
+import type { Concept, FilterFacet, ChartData, GraphNode, GraphEdge } from '../types';
 
 export const mockConcepts: Concept[] = [
   {

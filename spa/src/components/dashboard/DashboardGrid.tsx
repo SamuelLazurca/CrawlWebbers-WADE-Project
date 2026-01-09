@@ -2,15 +2,14 @@ import React from 'react';
 import { useFilterStore } from '../../stores/filterStore';
 import { StatCard } from '../cards/StatCard';
 import { ChartCard } from '../cards/ChartCard';
-import { DatasetCard } from '../cards/DatasetCard';
 import { ConceptCard } from '../cards/ConceptCard';
 import {
-  mockDatasets,
   mockConcepts,
   mockChartData,
   mockTrendData,
 } from '../../data/mockData';
 import { Database, Zap, Users, TrendingUp } from 'lucide-react';
+import { CompareCard } from '../layout/CompareCard';
 
 export const DashboardGrid: React.FC = () => {
   const { activeTab } = useFilterStore();
@@ -124,16 +123,7 @@ export const DashboardGrid: React.FC = () => {
   }
 
   if (activeTab === 'compare') {
-    return (
-      <div className='space-y-6'>
-        <h2 className='text-xl font-bold text-white'>Datasets Comparison</h2>
-        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-          {mockDatasets.map((dataset) => (
-            <DatasetCard key={dataset.id} dataset={dataset} />
-          ))}
-        </div>
-      </div>
-    );
+    return <CompareCard />;
   }
 
   return null;
