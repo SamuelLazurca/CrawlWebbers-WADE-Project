@@ -4,6 +4,7 @@ results/cve_rdf_batches/
 results/cpe_rdf_batches/
 results/cwe_rdf.ttl
 
+results/movielens/
 results/genome_scores.ttl
 results/genome_defs.ttl
 results/ratings.ttl

@@ -188,7 +188,6 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
 
 
 if __name__ == "__main__":
-    # UPDATE PATHS AS NEEDED
     process_cpe_json_folders(
         "CPE",
         "nist/cpe_rdf_batches"
