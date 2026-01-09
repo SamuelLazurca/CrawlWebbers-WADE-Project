@@ -58,5 +58,4 @@ def intelligent_search(
     try:
         return build_intelligent_query(request)
     except Exception as e:
-        # In dev, return the error. In prod, log it.
         raise HTTPException(status_code=500, detail=f"SPARQL Generation Error: {str(e)}")
