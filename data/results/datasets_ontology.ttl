@@ -7,6 +7,7 @@
 @prefix skos:      <http://www.w3.org/2004/02/skos/core#> .
 @prefix schema:    <http://schema.org/> .
 @prefix xsd:       <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdf:       <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 
 # --- ONTOLOGY METADATA ---
 davi-meta:Ontology a owl:Ontology ;
@@ -54,7 +55,7 @@ davi-meta:targetProperty a owl:ObjectProperty ;
 # SPA-Specific: Defines the Label shown in the UI Dropdown
 davi-meta:uiLabel a owl:DatatypeProperty ;
     rdfs:label "UI Label"@en ;
-    rdfs:domain [ owl:unionOf (davi-meta:Visualization davi-meta:VisualizationOption) ] ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( davi-meta:Visualization davi-meta:VisualizationOption ) ] ;
     rdfs:range xsd:string .
 
 # --- DATASET INSTANCES ---
@@ -101,7 +102,7 @@ davi-meta:viz_filtering a davi-meta:Visualization ;
         davi-meta:opt_filter_weakness .
 
 davi-meta:opt_filter_vendor a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "By Vendor (Organization)" ;
+    davi-meta:uiLabel "By Vendor (Organization)"@en ;
     davi-meta:targetProperty schema:manufacturer .  # Matches davi-nist data
 
 davi-meta:opt_filter_genre a davi-meta:VisualizationOption ;

@@ -6,7 +6,7 @@ from urllib.parse import quote
 
 import py7zr
 from rdflib import Graph, Literal, RDF, Namespace, URIRef
-from rdflib.namespace import RDFS, DCTERMS, OWL, XSD
+from rdflib.namespace import RDFS, DCTERMS
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("cpe-to-rdf")
@@ -25,6 +25,16 @@ def safe_uri(namespace, value):
 
 def make_cpe_uri(cpe_id):
     return safe_uri(CPE_NS, cpe_id)
+
+
+def make_cpe_uri_from_name(cpe_name):
+    """
+    Build a stable URI from the canonical CPE string (e.g. 'cpe:2.3:a:vendor:product:...').
+    This is used as the canonical resource IRI for a CPE.
+    """
+    # strip and canonicalize; percent-encode everything to produce a safe fragment
+    cpe_norm = cpe_name.strip()
+    return URIRef(str(CPE_NS) + quote(cpe_norm, safe=""))
 
 
 def make_vendor_uri(vendor):
@@ -56,17 +66,25 @@ def flush_batch(graph, batch_idx, output_dir):
     graph.serialize(path, format="turtle")
 
 
-def map_cpe_to_rdf(data, part, g):
-    cpe_name = data.get("cpeName")
+def map_cpe_to_rdf(data, part, g, cpe_map):
+    cpe_name = data.get("cpeName") or data.get("cpe23Uri")   # prefer cpeName but accept cpe23Uri
     cpe_id = data.get("cpeNameId")
 
-    if not cpe_name or not cpe_id:
+    if not cpe_name:
         return
 
-    product_uri = make_cpe_uri(cpe_id)
+    # Keep resource as UUID-based (existing behavior)
+    product_uri = make_cpe_uri(cpe_id) if cpe_id else make_cpe_uri_from_name(cpe_name)
 
-    # 1. Identifier
-    g.add((product_uri, DCTERMS.identifier, Literal(cpe_name)))
+    # store mapping for downstream resolution (exact match)
+    if cpe_id:
+        cpe_map[cpe_name] = cpe_id
+
+    # keep cpeNameId as identifier for traceability
+    if cpe_id:
+        g.add((product_uri, DCTERMS.identifier, Literal(cpe_id)))
+    # also include canonical cpe string on the resource
+    g.add((product_uri, DAVI_NIST.cpe23, Literal(cpe_name)))
 
     parts = cpe_name.split(":")
     if len(parts) < 6:
@@ -107,6 +125,9 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
     temp_dir = "_tmp_extract_cpe"
     os.makedirs(temp_dir, exist_ok=True)
 
+    # mapping: canonical_criteria_string -> cpeNameId (UUID)
+    cpe_map = {}
+
     g = init_graph()
     batch_idx = 0
     item_count = 0
@@ -137,7 +158,8 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
 
                     try:
                         with open(os.path.join(root, f), encoding="utf-8") as fh:
-                            map_cpe_to_rdf(json.load(fh), part, g)
+                            data = json.load(fh)
+                            map_cpe_to_rdf(data, part, g, cpe_map)   # pass map through
                     except Exception as e:
                         log.warning(f"Error parsing JSON {f}: {e}")
                         continue
@@ -151,6 +173,12 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
             shutil.rmtree(temp_dir)
             os.makedirs(temp_dir, exist_ok=True)
 
+    # after flush_batch loop but before cleanup
+    map_path = os.path.join(output_dir, "cpe_map.json")
+    with open(map_path, "w", encoding="utf-8") as mf:
+        json.dump(cpe_map, mf, ensure_ascii=False, indent=2)
+    log.info("Wrote CPE mapping → %s (%d entries)", map_path, len(cpe_map))
+
     if len(g):
         flush_batch(g, batch_idx, output_dir)
 
@@ -162,6 +190,6 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=2000):
 if __name__ == "__main__":
     # UPDATE PATHS AS NEEDED
     process_cpe_json_folders(
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CPE",
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_rdf_batches"
+        "CPE",
+        "nist/cpe_rdf_batches"
     )
