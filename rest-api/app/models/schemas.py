@@ -11,17 +11,30 @@ class ItemsResponseSchema(GenericModel, Generic[T]):
     items: List[T]
 
 
+# --- DATASET & CONFIGURATION MODELS ---
+
 class VisualizationOption(BaseModel):
+    """Represents a 'Preset' option defined in the ontology."""
     id: str
     label: str
     target_property: str
 
 
 class VisualizationModule(BaseModel):
+    """Represents a supported extension (e.g., 'Trends', 'Graph')."""
     id: str
     label: str
     description: Optional[str] = None
     options: List[VisualizationOption] = []
+
+
+class AnalyzableProperty(BaseModel):
+    """
+    Represents a property tagged with davi-meta:isDimension or davi-meta:isMetric.
+    Used for building custom visualizations.
+    """
+    uri: str
+    label: str
 
 
 class DatasetSchema(BaseModel):
@@ -36,6 +49,8 @@ class DatasetSchema(BaseModel):
     uploaded_by: Optional[str] = None
     uploaded_by_url: Optional[str] = None
     supported_visualizations: List[VisualizationModule] = []
+    dimensions: List[AnalyzableProperty] = []
+    metrics: List[AnalyzableProperty] = []
 
 
 # --- TRENDS & ANALYTICS MODELS ---
@@ -47,9 +62,17 @@ class GranularityEnum(str, Enum):
     DAY = "day"
 
 
+class AggregationType(str, Enum):
+    COUNT = "count"
+    SUM = "sum"
+    AVG = "avg"
+    MAX = "max"
+    MIN = "min"
+
+
 class TrendPoint(BaseModel):
     label: Union[str, float, int]
-    count: int
+    count: Optional[float] = 0
 
     class Config:
         from_attributes = True
@@ -58,7 +81,7 @@ class TrendPoint(BaseModel):
 class TrendsResponse(BaseModel):
     property: str
     granularity: GranularityEnum
-    total_records: int
+    total_records: float
     data: List[TrendPoint]
 
 
@@ -68,8 +91,6 @@ class GraphNode(BaseModel):
     id: str
     label: str
     group: str
-
-    # Optional metadata for sizing/coloring in UI
     value: Optional[float] = 1.0
 
 
@@ -77,8 +98,6 @@ class GraphLink(BaseModel):
     source: str
     target: str
     relationship: str
-
-    # Optional weight for edge thickness
     weight: Optional[float] = 1.0
 
 
@@ -104,7 +123,6 @@ class FilterCondition(BaseModel):
     property_uri: str
     operator: FilterOperator
     value: Union[str, int, float]
-
     path_to_target: Optional[str] = None
 
 
@@ -119,5 +137,4 @@ class FilterResultItem(BaseModel):
     uri: str
     label: str
     type: Optional[str] = None
-    # A dict of matched properties so the UI knows why it matched
     matches: Dict[str, Any] = {}
