@@ -1,4 +1,5 @@
 @prefix davi-nist: <https://purl.org/davi/vocab/nist#> .
+@prefix davi-meta: <https://purl.org/davi/vocab/meta#> .
 @prefix owl:  <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -11,11 +12,9 @@
 davi-nist:NISTVulnerabilityOntology
     a owl:Ontology ;
     rdfs:label "DaVi NIST Security Extensions"@en ;
-    dcterms:description "Extensions to Schema.org for NIST NVD Data (CVE, CWE, CPE, CVSS)"@en ;
+    dcterms:description "Extensions to Schema.org for NIST NVD Data (CVE, CWE, CPE, CVSS), tagged for DaVi's dynamic visualization engine."@en ;
     owl:imports <http://schema.org/> .
 
-# --- REUSED STANDARD CLASSES ---
-# We use these directly. Declaring them here aids visualization tools.
 
 schema:SoftwareApplication a owl:Class ;
     rdfs:label "Software Application (CPE)"@en .
@@ -26,15 +25,23 @@ schema:Organization a owl:Class ;
 schema:Thing a owl:Class ;
     rdfs:label "Thing"@en .
 
-# --- CUSTOM CLASSES ---
+# --- Properties for Dynamic Visualization (The LEGO Blocks) ---
 
-# Vulnerabilities are not standard in Schema.org, so we define them here.
+# PUBLICATION DATE: A Time Dimension.
+# Tells the frontend: "You can use this for Time Series trends."
+schema:datePublished
+    a owl:DatatypeProperty ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Publication Date" .
+
+
+# Vulnerabilities (CVE)
 davi-nist:Vulnerability a owl:Class ;
     rdfs:label "Vulnerability (CVE)"@en ;
     rdfs:subClassOf schema:Thing ;
     dcterms:description "A weakness in the computational logic (e.g., code) found in software and hardware components."@en .
 
-# Weaknesses (CWE) are hierarchical concepts, so they subclass SKOS Concept.
+# Weaknesses (CWE) - Hierarchical
 davi-nist:Weakness a owl:Class ;
     rdfs:label "Weakness (CWE)"@en ;
     rdfs:subClassOf skos:Concept .
@@ -43,52 +50,62 @@ davi-nist:Weakness a owl:Class ;
 davi-nist:CVSSMetric a owl:Class ;
     rdfs:label "CVSS Metric"@en .
 
-# --- CUSTOM PROPERTIES ---
 
-# Linking Vulnerability -> Software (Standardized Range)
+# --- Relationships (Dimensions) ---
+
+# AFFECTS SOFTWARE: Links to specific versions.
+# We don't mark this as a dimension because cardinality is too high (specific versions).
 davi-nist:affectsSoftware a owl:ObjectProperty ;
     rdfs:label "affects software"@en ;
     rdfs:domain davi-nist:Vulnerability ;
     rdfs:range schema:SoftwareApplication .
 
-# Linking Vulnerability -> Weakness (CWE)
+# AFFECTS VENDOR: Inferred high-level grouping.
+# KEY DIMENSION: Allows grouping by "Microsoft", "Adobe", etc.
+davi-nist:affectsVendor a owl:ObjectProperty ;
+    rdfs:label "affects vendor"@en ;
+    rdfs:domain davi-nist:Vulnerability ;
+    rdfs:range schema:Organization ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Vendor Organization" ;
+    # Inference Rule: Vulnerability -> Software -> Manufacturer = Vendor
+    owl:propertyChainAxiom (
+        davi-nist:affectsSoftware
+        schema:manufacturer
+    ) .
+
+# WEAKNESS TYPE: Hierarchical grouping.
+# KEY DIMENSION: Allows grouping by "Buffer Overflow", "Injection", etc.
 davi-nist:hasWeakness a owl:ObjectProperty ;
     rdfs:label "has weakness"@en ;
     rdfs:domain davi-nist:Vulnerability ;
     rdfs:range davi-nist:Weakness ;
-    owl:inverseOf davi-nist:isWeaknessOf .
+    owl:inverseOf davi-nist:isWeaknessOf ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "CWE Weakness Type" .
 
 davi-nist:isWeaknessOf a owl:ObjectProperty ;
     rdfs:label "is weakness of"@en ;
     rdfs:domain davi-nist:Weakness ;
     rdfs:range davi-nist:Vulnerability .
 
-# CVSS Metrics
+# --- Metrics (Math) ---
+
 davi-nist:hasCVSSMetric a owl:ObjectProperty ;
     rdfs:label "has CVSS metric"@en ;
     rdfs:domain davi-nist:Vulnerability ;
     rdfs:range davi-nist:CVSSMetric .
 
+# BASE SCORE: The primary number for NVD.
+# KEY METRIC: Allows calculating Average/Max Severity.
 davi-nist:baseScore a owl:DatatypeProperty ;
     rdfs:label "base score"@en ;
     rdfs:domain davi-nist:CVSSMetric ;
-    rdfs:range xsd:decimal .
+    rdfs:range xsd:decimal ;
+    davi-meta:isMetric "true"^^xsd:boolean ;
+    davi-meta:uiLabel "CVSS Severity Score (0-10)" .
 
 davi-nist:vectorString a owl:DatatypeProperty ;
     rdfs:label "vector string"@en ;
     rdfs:domain davi-nist:CVSSMetric ;
     rdfs:range xsd:string .
-
-# --- LOGICAL AXIOMS (Inference) ---
-
-# Inference Rule:
-# IF (Vulnerability A affects Software B) AND (Software B is manufactured by Vendor C)
-# THEN (Vulnerability A affects Vendor C)
-davi-nist:affectsVendor a owl:ObjectProperty ;
-    rdfs:label "affects vendor"@en ;
-    rdfs:domain davi-nist:Vulnerability ;
-    rdfs:range schema:Organization ;
-    owl:propertyChainAxiom (
-        davi-nist:affectsSoftware
-        schema:manufacturer
-    ) .
