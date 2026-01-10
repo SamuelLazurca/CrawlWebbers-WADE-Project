@@ -1,7 +1,7 @@
 import os
 
 # Allow environment variable override for Docker/Cloud deployment
-FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi1/sparql")
+FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi/sparql")
 
 PREFIXES = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -13,7 +13,7 @@ PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX schema: <http://schema.org/>
 
 # DaVi Custom Namespaces
-PREFIX davi-meta: <http://davi.app/vocab/meta#>
-PREFIX davi-nist: <http://davi.app/vocab/nist#>
-PREFIX davi-mov: <http://davi.app/vocab/movielens#>
+PREFIX davi-meta: <https://purl.org/davi/vocab/meta#>
+PREFIX davi-nist: <https://purl.org/davi/vocab/nist#>
+PREFIX davi-mov:  <https://purl.org/davi/vocab/movielens#>
 """
