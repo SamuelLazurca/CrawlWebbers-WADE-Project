@@ -5,7 +5,7 @@ from app.routers import filter, trends, compare, layers, graph, datasets
 app = FastAPI(
     title="DaVi API",
     description="OWL + SKOS powered API",
-    version="1.0.0"
+    version="2.0.0"
 )
 
 app.add_middleware(
