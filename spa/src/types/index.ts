@@ -34,3 +34,15 @@ export interface GraphEdge {
 export interface ItemsResponse<T> {
   items: T[];
 }
+
+export interface TrendPoint {
+  label: string;
+  count: number;
+}
+
+export interface TrendData {
+  property: string;
+  granularity: string;
+  totalRecords: number;
+  data: { label: string; count: number }[];
+}

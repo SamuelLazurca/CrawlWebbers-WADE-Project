@@ -1,44 +1,10 @@
-import React, { useState } from 'react';
-import { ChevronDown, Search, Filter, TrendingUp } from 'lucide-react';
-import { useFilterStore } from '../../stores/filterStore';
+import React from 'react';
+import { ChevronDown, Filter } from 'lucide-react';
 import { mockFilterFacets } from '../../data/mockData';
 import clsx from 'clsx';
 import { DatasetSelector } from '../DatasetsSelector';
 
 export const ModernSidebar: React.FC = () => {
-  const [expandedFacets, setExpandedFacets] = useState<Set<string>>(
-    new Set(['Category', 'Status'])
-  );
-  const [search, setSearch] = useState('');
-  const {
-    selectedFilters,
-    addFilter,
-    removeFilter,
-    clearFilters,
-    getFilterCount,
-  } = useFilterStore();
-
-  const toggleFacet = (property: string) => {
-    const updated = new Set(expandedFacets);
-    if (updated.has(property)) {
-      updated.delete(property);
-    } else {
-      updated.add(property);
-    }
-    setExpandedFacets(updated);
-  };
-
-  const filterCount = getFilterCount();
-
-  const filteredFacets = mockFilterFacets
-    .map((facet) => ({
-      ...facet,
-      values: facet.values.filter((v) =>
-        v.label.toLowerCase().includes(search.toLowerCase())
-      ),
-    }))
-    .filter((facet) => facet.values.length > 0);
-
   return (
     <aside className='fixed left-0 top-0 h-screen w-80 bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 border-r border-slate-800 flex flex-col shadow-2xl z-40'>
       <div className='p-6 bg-gradient-to-b from-slate-900/50 to-transparent backdrop-blur-sm'>

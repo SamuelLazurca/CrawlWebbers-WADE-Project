@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useFilterStore } from '../../stores/filterStore';
 import { StatCard } from '../cards/StatCard';
 import { ChartCard } from '../cards/ChartCard';
@@ -8,30 +8,72 @@ import {
   mockChartData,
   mockTrendData,
 } from '../../data/mockData';
-import { Database, Zap, Users, TrendingUp } from 'lucide-react';
+import { Database, Files, Users, TrendingUp } from 'lucide-react';
 import { CompareCard } from '../layout/CompareCard';
+import { useSidebarContext } from '../../context/sidebarContext';
+import type { TrendPoint } from '../../types';
+import { getTrendData } from '../../lib/trends';
 
 export const DashboardGrid: React.FC = () => {
   const { activeTab } = useFilterStore();
+  const { baseDataset } = useSidebarContext();
+  const [trendData, setTrendData] = useState<TrendPoint[]>([]);
+
+
+  useEffect(() => {
+   const fetchTrendData = async (propertyUri: string, granularity: string = 'year') => {
+      try {
+        const response = await getTrendData(propertyUri, granularity);
+        
+        const data = response.data.map(point => ({
+          label: point.label,
+          count: point.count,
+          //volume: point.value
+        }));
+
+        console.log("Fetched trend data:", data);
+        
+        setTrendData(data); 
+      } catch (error) {
+        console.error("Error fetching trends:", error);
+      }
+    };
+    if (baseDataset) {
+      fetchTrendData('http://schema.org/datePublished', 'year');
+    }
+  }, [baseDataset]);
+
+
+  if (!baseDataset) {
+    return (
+      <div className='text-white text-center py-8'>
+        Select a base dataset in the sidebar to view dashboard.
+      </div>
+    );
+  }
 
   if (activeTab === 'analytics') {
+    const formatSize = (b?: number) => {
+      if (!b) return '—';
+      if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
+      if (b >= 1e6) return (b / 1e6).toFixed(2) + ' MB';
+      if (b >= 1e3) return (b / 1e3).toFixed(2) + ' KB';
+      return b + ' B';
+    };
     return (
       <div className='space-y-6'>
         <div className='grid grid-cols-1 md:grid-cols-4 gap-4'>
           <StatCard
-            title='Total Concepts'
-            value='2,341'
-            trend='up'
-            trendValue={12}
+            title='Size'
+            value={formatSize(baseDataset.size_in_bytes)}
             icon={<Database size={24} />}
             color='cyan'
           />
           <StatCard
-            title='Active Datasets'
-            value='12'
-            description='2 processing'
-            icon={<Zap size={24} />}
+            title='Number of Files'
+            value={baseDataset.number_of_files?.toLocaleString() || '0'}
             color='emerald'
+            icon={<Files size={24} />}
           />
           <StatCard
             title='Relationships'
@@ -53,32 +95,22 @@ export const DashboardGrid: React.FC = () => {
 
         <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
           <ChartCard
-            title='Distribution by Category'
-            subtitle='Top 5 categories'
+            title='Bar Chart'
+            subtitle='Distribution over Years'
             type='bar'
-            data={mockChartData}
-            dataKey='value'
+            data={trendData.length > 0 ? trendData : []}
+            dataKey='count'
             xKey='label'
           />
           <ChartCard
-            title='Growth Trend'
-            subtitle='Last 30 days'
+            title='Line Chart'
+            subtitle='Growth over Years'
             type='line'
-            data={mockTrendData}
-            dataKey='value'
-            xKey='date'
+            data={trendData.length > 0 ? trendData : []}
+            dataKey='count'
+            xKey='label'
           />
         </div>
-
-        <ChartCard
-          title='Composition Analysis'
-          subtitle='Category breakdown'
-          type='pie'
-          data={mockChartData}
-          dataKey='value'
-          xKey='label'
-          height={350}
-        />
       </div>
     );
   }

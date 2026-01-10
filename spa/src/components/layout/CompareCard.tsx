@@ -1,8 +1,8 @@
-// src/components/compare/CompareCard.tsx
 import React, { useEffect, useMemo, useState } from 'react';
 import type { Dataset } from '../../types/datasets';
 import { getDatasets } from '../../lib/datasets';
 import clsx from 'clsx';
+import { X } from 'lucide-react';
 import { useSidebarContext } from '../../context/sidebarContext';
 
 export const CompareCard: React.FC = () => {
@@ -10,7 +10,6 @@ export const CompareCard: React.FC = () => {
   const [all, setAll] = useState<Dataset[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // selected comparison dataset ids
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -22,7 +21,6 @@ export const CompareCard: React.FC = () => {
     load();
   }, []);
 
-  // all except base
   const options = useMemo(() => {
     if (!baseDataset) return all;
     return all.filter((d) => d.id !== baseDataset.id);
@@ -45,7 +43,6 @@ export const CompareCard: React.FC = () => {
     <div className="space-y-6">
       <h2 className="text-xl font-bold text-white">Compare datasets</h2>
 
-      {/* Multi-select dropdown (simple) */}
       <div className="flex items-center gap-3">
         <label className="text-sm text-slate-300">Compare with:</label>
         <div className="relative">
@@ -56,7 +53,7 @@ export const CompareCard: React.FC = () => {
               if (!id) return;
               setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
             }}
-            className="bg-slate-800/50 border border-slate-700 text-slate-200 px-3 py-2 rounded-lg"
+            className="bg-slate-800/50 border text-xs border-slate-700 text-slate-200 px-3 py-2 rounded-lg"
           >
             <option value="">Select dataset...</option>
             {options.map((d) => (
@@ -67,7 +64,6 @@ export const CompareCard: React.FC = () => {
           </select>
         </div>
 
-        {/* selected pills */}
         <div className="flex gap-2 flex-wrap">
           {selectedDatasets.map((d) => (
             <div
@@ -80,20 +76,17 @@ export const CompareCard: React.FC = () => {
                 className="text-xs text-slate-400 hover:text-rose-400 ml-2"
                 aria-label={`Remove ${d.name}`}
               >
-                ×
+                <X size={12} />
               </button>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Comparison area */}
       <div className="overflow-x-auto">
         <div className="min-w-full grid grid-cols-1 md:grid-cols-[repeat(auto-fit,minmax(280px,1fr))] gap-4">
-          {/* Base column */}
           <ComparisonColumn title="Base" dataset={baseDataset} highlightDifferencesWith={selectedDatasets} />
 
-          {/* Each selected dataset column */}
           {selectedDatasets.map((d) => (
             <ComparisonColumn key={d.id} title={d.name || 'Dataset'} dataset={d} highlightDifferencesWith={[baseDataset]} />
           ))}
@@ -103,19 +96,15 @@ export const CompareCard: React.FC = () => {
   );
 };
 
-/* Column component that shows dataset metadata and highlights differences
-   highlightDifferencesWith: array of datasets to compare with (e.g. when rendering base, compare with selected ones)
-*/
 const ComparisonColumn: React.FC<{
   title?: string;
   dataset: Dataset;
-  highlightDifferencesWith?: Dataset[]; // if any field differs from ANY of these, highlight
+  highlightDifferencesWith?: Dataset[];
 }> = ({ title, dataset, highlightDifferencesWith = [] }) => {
   const isDifferent = (key: keyof Dataset) => {
     return highlightDifferencesWith.some((other) => {
       const a = dataset[key];
       const b = other[key];
-      // simple equality check; format values for numbers/dates
       return !deepEqualValues(a, b);
     });
   };
@@ -129,7 +118,9 @@ const ComparisonColumn: React.FC<{
     >
       <div className="flex items-center justify-between mb-3">
         <h3 className="font-semibold text-white">{title}</h3>
-        <span className="text-xs text-slate-400">{dataset.name || 'Untitled'}</span>
+        <a href={dataset.url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:underline">
+          {dataset.name || 'View Dataset'}
+        </a>
       </div>
 
       <div className="space-y-3">
@@ -137,8 +128,15 @@ const ComparisonColumn: React.FC<{
         <MetaRow label="Downloads" value={dataset.number_of_downloads ?? 0} highlight={isDifferent('number_of_downloads')} />
         <MetaRow label="Size" value={formatSize(dataset.size_in_bytes)} highlight={isDifferent('size_in_bytes')} />
         <MetaRow label="Added" value={formatDate(dataset.added_date)} highlight={isDifferent('added_date')} />
-        <MetaRow label="Uploaded by" value={dataset.uploaded_by ?? '—'} highlight={isDifferent('uploaded_by')} />
-        {/* add more fields if you have */}
+        {
+          dataset.uploaded_by_url ? (
+            <a href={dataset.uploaded_by_url} target="_blank" rel="noopener noreferrer" className={clsx('font-semibold', isDifferent('uploaded_by_url') ? 'text-rose-300' : 'text-slate-200')}>
+              <MetaRow label="Uploaded by" value={dataset.uploaded_by ?? '—'} highlight={isDifferent('uploaded_by')} />
+            </a>
+          ) : (
+            <MetaRow label="Uploaded by" value={dataset.uploaded_by ?? '—'} highlight={isDifferent('uploaded_by')} />
+          )
+        }
       </div>
     </div>
   );
@@ -153,7 +151,6 @@ const MetaRow: React.FC<{ label: string; value: React.ReactNode; highlight?: boo
   </div>
 );
 
-/* helpers */
 const formatSize = (b?: number) => {
   if (!b) return '—';
   if (b >= 1e9) return (b / 1e9).toFixed(2) + ' GB';
@@ -165,16 +162,13 @@ const formatSize = (b?: number) => {
 const formatDate = (s?: string) => (s ? new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(s)) : '—');
 
 const deepEqualValues = (a: any, b: any): boolean => {
-  // normalize numbers / strings / dates
   if (a === b) return true;
   if (a == null && b == null) return true;
   if (typeof a === 'number' && typeof b === 'number') return a === b;
   if (typeof a === 'string' && typeof b === 'string') return a === b;
-  // if date strings — compare time
   const da = a ? new Date(a).getTime() : NaN;
   const db = b ? new Date(b).getTime() : NaN;
   if (!Number.isNaN(da) && !Number.isNaN(db)) return da === db;
-  // fallback to JSON compare for simple objects
   try {
     return JSON.stringify(a) === JSON.stringify(b);
   } catch {

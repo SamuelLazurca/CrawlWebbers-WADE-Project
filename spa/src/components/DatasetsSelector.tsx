@@ -39,9 +39,9 @@ export const DatasetSelector: React.FC = () => {
           aria-haspopup="listbox"
           aria-expanded={open}
         >
-          <div className="flex items-center gap-2">
-            <Database size={16} className="text-cyan-400" />
-            <span className="font-medium line-clamp-1">
+          <div className="flex items-center gap-2 ">
+            <Database size={16} className="text-cyan-400 shrink-0" />
+            <span className="font-medium text-sm line-clamp-1">
               {baseDataset?.name ?? 'Select a dataset'}
             </span>
           </div>
@@ -58,7 +58,7 @@ export const DatasetSelector: React.FC = () => {
                   setOpen(false);
                 }}
                 className={clsx(
-                  'w-full text-left px-4 py-3 text-sm transition',
+                  'w-full text-left px-4 py-3 text-xs line-clamp-1 transition',
                   'hover:bg-slate-800/60',
                   ds.id === baseDataset?.id ? 'bg-emerald-500/10 text-emerald-300' : 'text-slate-300'
                 )}
