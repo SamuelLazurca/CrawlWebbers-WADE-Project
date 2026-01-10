@@ -2,7 +2,6 @@ import pandas as pd
 import datetime
 import os
 
-# ================= CONFIGURATION =================
 TOP_N_MOVIES = 5000
 GENOME_THRESHOLD = 0.5
 INPUT_DIR = "D:/Master/Anul2Sem1/WADE/Project/davi/data/ML_20M"
@@ -20,9 +19,9 @@ PREFIXES = """@prefix schema: <http://schema.org/> .
 """
 
 # GLOBAL STORAGE
-MOVIE_ID_TO_IMDB = {}  # Internal ID -> IMDB Suffix (e.g., "1" -> "0114709")
+MOVIE_ID_TO_IMDB = {}  
 
-# GENRE MAPPING (MovieLens -> IMDB Search Slug)
+# GENRE MAPPING 
 GENRE_MAP = {
     "Action": "action", "Adventure": "adventure", "Animation": "animation",
     "Children": "family", "Comedy": "comedy", "Crime": "crime",
@@ -55,7 +54,6 @@ def write_header(f):
 def setup_movie_mapping():
     print("Step 1: Finding top movies and mapping IDs...")
 
-    # 1. Count ratings to find top movies
     counts = pd.Series(dtype=int)
     chunk_size = 1000000
     reader = pd.read_csv(f"{INPUT_DIR}/ratings.csv", usecols=['movieId'], chunksize=chunk_size)
@@ -65,7 +63,7 @@ def setup_movie_mapping():
 
     top_ids = set(counts.sort_values(ascending=False).head(TOP_N_MOVIES).index.astype(str))
 
-    # 2. Map internal ID to IMDB ID using links.csv
+    # Map internal ID to IMDB ID using links.csv
     links_df = pd.read_csv(f"{INPUT_DIR}/links.csv", dtype=str)
     mapped_count = 0
 
@@ -93,13 +91,11 @@ def process_movies():
             m_id = row['movieId']
             if m_id not in MOVIE_ID_TO_IMDB: continue
 
-            # CURIE: imdb:0114709
             imdb_suffix = MOVIE_ID_TO_IMDB[m_id]
             movie_node = f"imdb:{imdb_suffix}"
 
             title = clean_text(row['title'])
 
-            # Process Genres into CURIE (e.g., genre:comedy)
             genre_uris = []
             if pd.notna(row['genres']):
                 for g in row['genres'].split('|'):
@@ -141,7 +137,6 @@ def process_ratings():
                 rating = row['rating']
                 ts = format_date(row['timestamp'])
 
-                # Rating Node: davi-mov:rating_1_2
                 rating_node = f"davi-mov:rating_{u_id}_{m_id}"
                 user_node = f"davi-mov:user_{u_id}"
                 movie_node = f"imdb:{imdb_suffix}"
@@ -196,7 +191,6 @@ def process_genome():
 def process_tags_metadata():
     print("Step 5: Processing Tag Definitions and User Tags...")
 
-    # 1. Genome Tag Definitions
     df_defs = pd.read_csv(f"{INPUT_DIR}/genome-tags.csv", dtype=str)
     with open(f"{OUTPUT_DIR}/genome_defs.ttl", "w", encoding="utf-8") as f:
         write_header(f)
@@ -205,7 +199,6 @@ def process_tags_metadata():
             t_name = clean_text(row['tag'])
             f.write(f'davi-mov:genometag_{t_id} a davi-mov:GenomeTag ; rdfs:label "{t_name}" .\n')
 
-    # 2. User Tags (Free text)
     df_user_tags = pd.read_csv(f"{INPUT_DIR}/tags.csv", dtype=str)
     with open(f"{OUTPUT_DIR}/user_tags.ttl", "w", encoding="utf-8") as f:
         write_header(f)
@@ -219,7 +212,6 @@ def process_tags_metadata():
             ts = format_date(ts_raw)
             content = clean_text(row['tag'])
 
-            # Using davi-mov:TagApplication (subclass of schema:CreateAction)
             tag_app_node = f"davi-mov:tagapp_{u_id}_{m_id}_{ts_raw}"
             movie_node = f"imdb:{imdb_suffix}"
             user_node = f"davi-mov:user_{u_id}"

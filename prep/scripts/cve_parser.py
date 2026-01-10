@@ -12,7 +12,7 @@ from rdflib.namespace import XSD, DCTERMS
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("cve-to-rdf")
 
-# --- NAMESPACES ---
+# NAMESPACES
 CVE = Namespace("https://nvd.nist.gov/vuln/detail/")
 CWE = Namespace("https://cwe.mitre.org/data/definitions/")
 CPE = Namespace("https://nvd.nist.gov/products/cpe/detail/")
@@ -20,7 +20,7 @@ CVSS = Namespace("https://www.first.org/cvss/")
 DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
 SCHEMA = Namespace("http://schema.org/")
 
-CPE_MAP_PATH = "nist/cpe_rdf_batches/cpe_map.json"
+CPE_MAP_PATH = "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_map.json"
 
 
 def safe_uri(namespace, value):
@@ -58,19 +58,16 @@ def parse_cve_json(data, g, cpe_map):
 
     cve_uri = CVE[cve_id]
 
-    # 1. Main Class & Identifiers
     g.add((cve_uri, RDF.type, DAVI_NIST.Vulnerability))
-    g.add((cve_uri, SCHEMA.name, Literal(cve_id)))  # Use schema:name for generic display
+    g.add((cve_uri, SCHEMA.name, Literal(cve_id))) 
     g.add((cve_uri, DCTERMS.identifier, Literal(cve_id)))
 
-    # 2. Descriptions -> schema:description
     for d in data.get("descriptions", []):
         if d.get("lang") == "en":
             add_literal_if_present(
                 g, cve_uri, SCHEMA.description, d.get("value"), lang="en"
             )
 
-    # 3. Dates -> schema:datePublished, schema:dateModified
     add_literal_if_present(
         g, cve_uri, SCHEMA.datePublished,
         data.get("published"), datatype=XSD.dateTime
@@ -80,21 +77,18 @@ def parse_cve_json(data, g, cpe_map):
         data.get("lastModified"), datatype=XSD.dateTime
     )
 
-    # 4. Status -> davi-nist:vulnerabilityStatus (Custom, or use schema:creativeWorkStatus)
-    # We will use a custom property in davi-nist if strict schema is needed,
-    # or just simple literal. Let's use schema:creativeWorkStatus for "Rejected/Analyzed"
     add_literal_if_present(
         g, cve_uri, SCHEMA.creativeWorkStatus, data.get("vulnStatus")
     )
 
-    # 5. Weaknesses -> davi-nist:hasWeakness
+    # WEAKNESSES
     for weakness in data.get("weaknesses", []):
         for desc in weakness.get("description", []):
             m = re.search(r"CWE-(\d+)", desc.get("value", ""))
             if m:
                 g.add((cve_uri, DAVI_NIST.hasWeakness, CWE[m.group(1)]))
 
-    # 6. Affected Products -> davi-nist:affectsSoftware
+    # AFFECTED PRODUCTS
     for cfg in data.get("configurations", []):
         for node in cfg.get("nodes", []):
             for match in node.get("cpeMatch", []):
@@ -103,30 +97,16 @@ def parse_cve_json(data, g, cpe_map):
                 if not criteria and not match_id:
                     continue
 
-                # Try exact resolution by canonical criteria string -> cpeNameId
                 cpe_id = cpe_map.get(criteria)
                 if cpe_id:
                     product_uri = make_cpe_uri(cpe_id)  # CPE_NS + UUID (existing resource)
                     g.add((cve_uri, DAVI_NIST.affectsSoftware, product_uri))
-                    # keep traceability: include matchCriteriaId and criteria on the triple/resource
-                    if match_id:
-                        g.add((product_uri, DAVI_NIST.matchCriteriaId, Literal(match_id)))
-                else:
-                    # Not resolved via mapping: log and attach unresolved triple for later reconciliation
-                    if criteria:
-                        # attach the raw criteria string to CVE for debugging
-                        g.add((cve_uri, DAVI_NIST.unresolvedCriteria, Literal(criteria)))
-                    if match_id:
-                        g.add((cve_uri, DAVI_NIST.matchCriteriaId, Literal(match_id)))
-                    log.debug("Unresolved CPE criteria for CVE %s: %s", cve_id, criteria)
 
-    # 7. References -> schema:url (or rdfs:seeAlso)
     for ref in data.get("references", []):
         url = ref.get("url")
         if url:
             g.add((cve_uri, SCHEMA.url, URIRef(url)))
 
-    # 8. CVSS Metrics
     parse_cvss_metrics(data.get("metrics", {}), cve_uri, g)
 
 
@@ -141,7 +121,10 @@ def parse_cvss_metrics(metrics, cve_uri, g):
             if not version:
                 continue
 
-            metric_uri = URIRef(f"{cve_uri}/cvss/{version}")
+            if version == "2.0" or version == "1.0":
+                version = version[0]
+
+            metric_uri = URIRef(f"https://www.first.org/cvss/v{version}")
 
             g.add((metric_uri, RDF.type, DAVI_NIST.CVSSMetric))
             g.add((cve_uri, DAVI_NIST.hasCVSSMetric, metric_uri))
@@ -161,7 +144,6 @@ def process_all_cves(input_dir, output_dir):
     temp_dir = "_tmp_extract_cve"
     os.makedirs(temp_dir, exist_ok=True)
 
-    # load the CPE mapping (criteria -> cpeNameId)
     try:
         with open(CPE_MAP_PATH, "r", encoding="utf-8") as mf:
             cpe_map = json.load(mf)
@@ -172,7 +154,7 @@ def process_all_cves(input_dir, output_dir):
 
     batch_idx = 0
 
-    for fname in sorted(os.listdir(input_dir))[-3:]:
+    for fname in sorted(os.listdir(input_dir))[:6]:
         if not fname.endswith(".7z"):
             continue
 
@@ -194,7 +176,7 @@ def process_all_cves(input_dir, output_dir):
         except Exception as e:
             log.error(f"Error processing {fname}: {e}")
         finally:
-            # Clean up extracted files after each batch to save space
+            # Clean up 
             if os.path.exists(temp_dir):
                 shutil.rmtree(temp_dir)
             os.makedirs(temp_dir, exist_ok=True)
@@ -212,6 +194,6 @@ def process_all_cves(input_dir, output_dir):
 
 if __name__ == "__main__":
     process_all_cves(
-        "CVE",
-        "nist/cve_rdf_batches"
+        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CVE",
+        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cve_rdf_batches"
     )
