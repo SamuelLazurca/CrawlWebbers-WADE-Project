@@ -1,10 +1,10 @@
-import {create} from 'zustand';
-import {subscribeWithSelector} from 'zustand/middleware';
+import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 
 interface FilterState {
   selectedFilters: Map<string, Set<string>>;
   searchQuery: string;
-  activeTab: 'analytics' | 'graph' | '3d' | 'compare';
+  activeTab: 'presets' | 'builder' | 'explorer' | 'compare';
 
   addFilter: (property: string, value: string) => void;
   removeFilter: (property: string, value: string) => void;
@@ -18,7 +18,7 @@ export const useFilterStore = create<FilterState>()(
   subscribeWithSelector((set, get) => ({
     selectedFilters: new Map(),
     searchQuery: '',
-    activeTab: 'analytics',
+    activeTab: 'presets',
 
     addFilter: (property, value) =>
       set((state) => {
