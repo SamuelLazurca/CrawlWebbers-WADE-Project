@@ -9,7 +9,7 @@ from rdflib.namespace import SKOS, DCTERMS
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("cwe-to-rdf")
 
-# --- NAMESPACES ---
+# NAMESPACES
 DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
 CWE = Namespace("https://cwe.mitre.org/data/definitions/")
 CAPEC = Namespace("https://capec.mitre.org/data/definitions/")
@@ -52,7 +52,6 @@ def process_weakness(weakness, ns, g):
 
     cwe_uri = CWE[cwe_id]
 
-    # 1. Type: davi-nist:Weakness (subclass of skos:Concept)
     g.add((cwe_uri, RDF.type, DAVI_NIST.Weakness))
     g.add((cwe_uri, RDF.type, SKOS.Concept))
 
@@ -61,11 +60,10 @@ def process_weakness(weakness, ns, g):
     if name:
         g.add((cwe_uri, SKOS.prefLabel, Literal(f"CWE-{cwe_id}: {name}", lang="en")))
 
-    # 2. Description -> schema:description
     desc = weakness.findtext("cwe:Description", namespaces=ns)
     add_en_literal(g, cwe_uri, SCHEMA.description, desc)
 
-    # 3. Hierarchy (Parents/Children) -> SKOS
+    # HIERARCHY
     for rel in weakness.findall(".//cwe:Related_Weakness", ns):
         if rel.get("Nature") == "ChildOf":
             parent_id = rel.get("CWE_ID")
@@ -74,13 +72,12 @@ def process_weakness(weakness, ns, g):
                 g.add((cwe_uri, SKOS.broader, parent_uri))
                 g.add((parent_uri, SKOS.narrower, cwe_uri))
 
-    # 4. CAPEC Relations -> SKOS
+    # RELATED ATTACK PATTERNS (CAPEC)
     for capec in weakness.findall(".//cwe:Related_Attack_Pattern", ns):
         capec_id = capec.get("CAPEC_ID")
         if capec_id:
             g.add((cwe_uri, SKOS.related, CAPEC[capec_id]))
 
-    # 5. Alternate Terms -> SKOS altLabel
     for alt in weakness.findall(".//cwe:Alternate_Term", ns):
         term = alt.findtext("cwe:Term", namespaces=ns)
         add_en_literal(g, cwe_uri, SKOS.altLabel, term)
@@ -110,6 +107,6 @@ def process_cwe_xml(zip_path, output_ttl):
 
 
 if __name__ == "__main__":
-    zip_loc = r"CWE/Full-Downloads/cwec_latest.xml.zip"
-    out_ttl = r"nist/cwe_rdf.ttl"
+    zip_loc = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CWE/Full-Downloads/cwec_latest.xml.zip"
+    out_ttl = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cwe_rdf.ttl"
     process_cwe_xml(zip_loc, out_ttl)

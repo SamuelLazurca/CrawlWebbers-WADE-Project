@@ -3,7 +3,6 @@
 @prefix davi-mov:  <http://davi.app/vocab/movielens#> .
 @prefix owl:       <http://www.w3.org/2002/07/owl#> .
 @prefix rdfs:      <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix dcterms:   <http://purl.org/dc/terms/> .
 @prefix skos:      <http://www.w3.org/2004/02/skos/core#> .
 @prefix schema:    <http://schema.org/> .
@@ -59,6 +58,12 @@ davi-meta:uiLabel a owl:DatatypeProperty ;
     rdfs:domain [ a owl:Class ; owl:unionOf ( davi-meta:Visualization davi-meta:VisualizationOption ) ] ;
     rdfs:range xsd:string .
 
+davi-meta:uploader a owl:ObjectProperty ;
+    rdfs:label "uploader"@en ;
+    rdfs:comment "Points to a schema:Person who uploaded the dataset; use schema:url for profile link."@en ;
+    rdfs:domain davi-meta:Dataset ;
+    rdfs:range schema:Person .
+
 # --- DATASET INSTANCES ---
 
 # 1. NIST National Vulnerability Database
@@ -68,13 +73,21 @@ davi-meta:dataset_nist a davi-meta:Dataset ;
     schema:description "Security vulnerability records including CVE, CPE, and CWE data."@en ;
     schema:url <https://academictorrents.com/details/fe623a0bbd13e8f152ea2317f151d8d3719ba96b> ;
     schema:dateCreated "2025-06-01"^^xsd:date ;
-    schema:fileFormat "application/turtle" ;
+
+    davi-meta:sizeBytes "1458628411"^^xsd:nonNegativeInteger ;
+    davi-meta:fileCount "25183"^^xsd:nonNegativeInteger ;
+    davi-meta:downloadCount "456"^^xsd:nonNegativeInteger ;
+    davi-meta:uploader davi-meta:user_acme_researcher ;
     
     # Supported Extensions
     davi-meta:supportsVisualization 
         davi-meta:viz_filtering, 
         davi-meta:viz_trends, 
         davi-meta:viz_hierarchy .
+
+davi-meta:user_acme_researcher a schema:Person ;
+    schema:name "tripleshrimp" ;
+    schema:url <https://academictorrents.com/userdetails.php?id=23855> .
 
 # 2. MovieLens 20M
 davi-meta:dataset_movielens a davi-meta:Dataset ;
@@ -83,13 +96,21 @@ davi-meta:dataset_movielens a davi-meta:Dataset ;
     schema:description "20 million ratings and Tag Genome relevance scores for movies."@en ;
     schema:url <https://academictorrents.com/details/296054417b4d8eeeb4c7b1c842570bf792ee4d14> ;
     schema:dateCreated "2016-10-17"^^xsd:date ;
-    schema:fileFormat "application/turtle" ;
+
+    davi-meta:sizeBytes "198702078"^^xsd:nonNegativeInteger ;
+    davi-meta:fileCount "1"^^xsd:nonNegativeInteger ;
+    davi-meta:downloadCount "2257"^^xsd:nonNegativeInteger ;
+    davi-meta:uploader davi-meta:user_grouplens_admin ;
     
     # Supported Extensions
     davi-meta:supportsVisualization 
         davi-meta:viz_filtering, 
         davi-meta:viz_trends, 
         davi-meta:viz_network .
+
+davi-meta:user_grouplens_admin a schema:Person ;
+    schema:name "joecohen" ;
+    schema:url <https://academictorrents.com/userdetails.php?id=14> .
 
 # --- VISUALIZATION EXTENSIONS (The 3 Required Modules) ---
 
