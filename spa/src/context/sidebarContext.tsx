@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
-import type { Dataset } from '../types/datasets';
+import type { Dataset } from '../types';
 
 interface SidebarContextValue {
   baseDataset: Dataset | null;
@@ -18,8 +18,11 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSidebarContext = (): SidebarContextValue => {
   const ctx = useContext(SidebarContext);
-  if (!ctx) throw new Error('useSidebarContext must be used within SidebarProvider');
+  if (!ctx) {
+    throw new Error('useSidebarContext must be used within SidebarProvider');
+  }
   return ctx;
 };
