@@ -1,6 +1,6 @@
 import os
 
-FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi/sparql")
+FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi2/sparql")
 
 PREFIXES = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
