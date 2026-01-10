@@ -1,5 +1,5 @@
 @prefix schema: <http://schema.org/> .
-@prefix davi-mov: <http://davi.app/vocab/movielens#> .
+@prefix davi-mov: <https://purl.org/davi/vocab/movielens#> .
 @prefix imdb: <https://www.imdb.com/title/tt> .
 @prefix genre: <https://www.imdb.com/search/title/?genres=> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
