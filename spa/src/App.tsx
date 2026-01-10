@@ -6,8 +6,9 @@ import { SidebarProvider } from './context/sidebarContext';
 function App() {
   return (
     <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100'>
-      <Header />
       <SidebarProvider>
+        {/* Now Header can access baseDataset to show "Viewing: NVD" */}
+        <Header />
         <ModernSidebar />
 
         <main className='fixed left-80 right-0 top-32 bottom-0 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent'>

@@ -1,6 +1,5 @@
-// src/stores/filterStore.ts
-import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
+import {create} from 'zustand';
+import {subscribeWithSelector} from 'zustand/middleware';
 
 interface FilterState {
   selectedFilters: Map<string, Set<string>>;
