@@ -14,7 +14,7 @@ export const GraphVis = () => {
 
   // Default URIs for demo purposes if dataset is selected
   const startUri = baseDataset?.id === 'nist-nvd'
-    ? 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228' // Log4j
+    ? 'https://nvd.nist.gov/vuln/detail/CVE-2001-0001' // Log4j
     : 'https://www.imdb.com/title/tt0114709'; // Toy Story
 
   useEffect(() => {

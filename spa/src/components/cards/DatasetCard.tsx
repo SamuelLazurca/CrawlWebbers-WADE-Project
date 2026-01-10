@@ -1,8 +1,7 @@
 import React from 'react';
 import {Database} from 'lucide-react';
 import {cn, formatDate, formatSize} from '../../lib/utils';
-import type {Dataset} from '../../types/datasets';
-
+import type {Dataset} from '../../types/index';
 interface DatasetCardProps {
   dataset: Dataset;
   onClick?: () => void;

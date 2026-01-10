@@ -12,26 +12,19 @@
 # --- ONTOLOGY METADATA ---
 davi-meta:Ontology a owl:Ontology ;
     rdfs:label "DaVi Dataset Registry & Visualization Ontology"@en ;
-    dcterms:description "Metamodel for registering datasets and defining available visualization capabilities for the DaVi SPA."@en ;
+    dcterms:description "A modular metamodel for dataset registration, default visualization presets, and dynamic custom analytics configuration."@en ;
     owl:imports <http://schema.org/> .
 
-# --- CLASSES ---
 
 # A Dataset registered in the system
 davi-meta:Dataset a owl:Class ;
     rdfs:label "Registered Dataset"@en ;
     rdfs:subClassOf schema:Dataset .
 
-# A specific Visualization Module (The "Extension" requirement)
+# A specific Visualization Module (Functional Extensions like 'Graph', 'Trends')
 davi-meta:Visualization a owl:Class ;
     rdfs:label "Visualization Module"@en ;
-    dcterms:description "A functional extension of the web app (e.g., Trends, Graph View)"@en .
-
-# Configuration options for a visualization (e.g., 'Group By Year')
-davi-meta:VisualizationOption a owl:Class ;
-    rdfs:label "Visualization Configuration Option"@en .
-
-# --- PROPERTIES ---
+    dcterms:description "A functional extension of the web app."@en .
 
 # Links a Dataset to the Visualizations it supports
 davi-meta:supportsVisualization a owl:ObjectProperty ;
@@ -39,47 +32,74 @@ davi-meta:supportsVisualization a owl:ObjectProperty ;
     rdfs:domain davi-meta:Dataset ;
     rdfs:range davi-meta:Visualization .
 
-# Links a Visualization to specific configuration choices
+# Metadata for attribution
+davi-meta:uploader a owl:ObjectProperty ;
+    rdfs:label "uploader"@en ;
+    rdfs:domain davi-meta:Dataset ;
+    rdfs:range schema:Person .
+
+# UI Label property (Shared across all UI-visible entities)
+davi-meta:uiLabel a owl:DatatypeProperty ;
+    rdfs:label "UI Label"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:string .
+
+davi-meta:isDimension a owl:AnnotationProperty ;
+    rdfs:label "Is Dimension?" ;
+    rdfs:comment "Flag: This property is suitable for grouping (X-Axis, Color Categories)." ;
+    rdfs:range xsd:boolean .
+
+davi-meta:isMetric a owl:AnnotationProperty ;
+    rdfs:label "Is Metric?" ;
+    rdfs:comment "Flag: This property is suitable for mathematical aggregation (Y-Axis, Size)." ;
+    rdfs:range xsd:boolean .
+
+# --- Chart Types (Controlled Vocabulary for UI Dropdowns) ---
+davi-meta:ChartType a owl:Class ; rdfs:label "Chart Type"@en .
+
+davi-meta:BarChart a davi-meta:ChartType ; rdfs:label "Bar Chart" .
+davi-meta:LineChart a davi-meta:ChartType ; rdfs:label "Line Chart" .
+davi-meta:PieChart a davi-meta:ChartType ; rdfs:label "Pie Chart" .
+davi-meta:ScatterPlot a davi-meta:ChartType ; rdfs:label "Scatter Plot" .
+davi-meta:HeatMap a davi-meta:ChartType ; rdfs:label "Heat Map" .
+
+# --- Aggregation Functions (Controlled Vocabulary for UI Dropdowns) ---
+davi-meta:AggregationFunction a owl:Class ; rdfs:label "Aggregation Function"@en .
+
+davi-meta:Count a davi-meta:AggregationFunction ; rdfs:label "Count (Frequency)" .
+davi-meta:Sum a davi-meta:AggregationFunction ; rdfs:label "Sum" .
+davi-meta:Average a davi-meta:AggregationFunction ; rdfs:label "Average (Mean)" .
+davi-meta:Max a davi-meta:AggregationFunction ; rdfs:label "Maximum" .
+davi-meta:Min a davi-meta:AggregationFunction ; rdfs:label "Minimum" .
+
+davi-meta:VisualizationOption a owl:Class ;
+    rdfs:label "Visualization Preset"@en .
+
 davi-meta:hasOption a owl:ObjectProperty ;
-    rdfs:label "has configuration option"@en ;
+    rdfs:label "has preset option"@en ;
     rdfs:domain davi-meta:Visualization ;
     rdfs:range davi-meta:VisualizationOption .
 
-# SPA-Specific: Defines which RDF property to query for this option
-# This allows the frontend to dynamically generate SPARQL queries.
+# Links the preset to the RDF property it visualizes
 davi-meta:targetProperty a owl:ObjectProperty ;
     rdfs:label "target RDF property"@en ;
     rdfs:domain davi-meta:VisualizationOption ;
     rdfs:range rdf:Property .
 
-# SPA-Specific: Defines the Label shown in the UI Dropdown
-davi-meta:uiLabel a owl:DatatypeProperty ;
-    rdfs:label "UI Label"@en ;
-    rdfs:domain [ a owl:Class ; owl:unionOf ( davi-meta:Visualization davi-meta:VisualizationOption ) ] ;
-    rdfs:range xsd:string .
 
-davi-meta:uploader a owl:ObjectProperty ;
-    rdfs:label "uploader"@en ;
-    rdfs:comment "Points to a schema:Person who uploaded the dataset; use schema:url for profile link."@en ;
-    rdfs:domain davi-meta:Dataset ;
-    rdfs:range schema:Person .
-
-# --- DATASET INSTANCES ---
-
-# 1. NIST National Vulnerability Database
+# --- NIST NVD Dataset ---
 davi-meta:dataset_nist a davi-meta:Dataset ;
     dcterms:identifier "nist-nvd" ;
     schema:name "NIST National Vulnerability Database"@en ;
     schema:description "Security vulnerability records including CVE, CPE, and CWE data."@en ;
     schema:url <https://academictorrents.com/details/fe623a0bbd13e8f152ea2317f151d8d3719ba96b> ;
     schema:dateCreated "2025-06-01"^^xsd:date ;
-
     davi-meta:sizeBytes "1458628411"^^xsd:nonNegativeInteger ;
     davi-meta:fileCount "25183"^^xsd:nonNegativeInteger ;
     davi-meta:downloadCount "456"^^xsd:nonNegativeInteger ;
     davi-meta:uploader davi-meta:user_acme_researcher ;
     
-    # Supported Extensions
+    # Supported Modules
     davi-meta:supportsVisualization 
         davi-meta:viz_filtering, 
         davi-meta:viz_trends, 
@@ -89,20 +109,19 @@ davi-meta:user_acme_researcher a schema:Person ;
     schema:name "tripleshrimp" ;
     schema:url <https://academictorrents.com/userdetails.php?id=23855> .
 
-# 2. MovieLens 20M
+# --- MovieLens 20M Dataset ---
 davi-meta:dataset_movielens a davi-meta:Dataset ;
     dcterms:identifier "movielens-20m" ;
     schema:name "MovieLens 20M Dataset"@en ;
     schema:description "20 million ratings and Tag Genome relevance scores for movies."@en ;
     schema:url <https://academictorrents.com/details/296054417b4d8eeeb4c7b1c842570bf792ee4d14> ;
     schema:dateCreated "2016-10-17"^^xsd:date ;
-
     davi-meta:sizeBytes "198702078"^^xsd:nonNegativeInteger ;
     davi-meta:fileCount "1"^^xsd:nonNegativeInteger ;
     davi-meta:downloadCount "2257"^^xsd:nonNegativeInteger ;
     davi-meta:uploader davi-meta:user_grouplens_admin ;
     
-    # Supported Extensions
+    # Supported Modules
     davi-meta:supportsVisualization 
         davi-meta:viz_filtering, 
         davi-meta:viz_trends, 
@@ -112,41 +131,43 @@ davi-meta:user_grouplens_admin a schema:Person ;
     schema:name "joecohen" ;
     schema:url <https://academictorrents.com/userdetails.php?id=14> .
 
-# --- VISUALIZATION EXTENSIONS (The 3 Required Modules) ---
+# ==============================================================================
+# 5. VISUALIZATION MODULES & PRESETS (Instances)
+# ==============================================================================
 
-# --- Extension 1: Intelligent Filtering (Faceted Search) ---
+# --- Module 1: Intelligent Filtering ---
 davi-meta:viz_filtering a davi-meta:Visualization ;
     davi-meta:uiLabel "Intelligent Filtering" ;
-    dcterms:description "Filter entities based on semantic properties."@en ;
+    dcterms:description "Semantic search and filtering."@en ;
     davi-meta:hasOption 
         davi-meta:opt_filter_vendor,
         davi-meta:opt_filter_genre,
         davi-meta:opt_filter_weakness .
 
 davi-meta:opt_filter_vendor a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "By Vendor (Organization)"@en ;
-    davi-meta:targetProperty schema:manufacturer .  # Matches davi-nist data
+    davi-meta:uiLabel "By Vendor" ;
+    davi-meta:targetProperty schema:manufacturer . 
 
 davi-meta:opt_filter_genre a davi-meta:VisualizationOption ;
     davi-meta:uiLabel "By Genre" ;
-    davi-meta:targetProperty schema:genre .         # Matches davi-mov data
+    davi-meta:targetProperty schema:genre .
 
 davi-meta:opt_filter_weakness a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "By Weakness Type (CWE)" ;
-    davi-meta:targetProperty davi-nist:hasWeakness . # Matches davi-nist data
+    davi-meta:uiLabel "By Weakness (CWE)" ;
+    davi-meta:targetProperty davi-nist:hasWeakness .
 
-# --- Extension 2: Trends Computation (Time & Distribution) ---
+# --- Module 2: Trends & Analytics ---
 davi-meta:viz_trends a davi-meta:Visualization ;
     davi-meta:uiLabel "Trends & Analytics" ;
-    dcterms:description "Analyze data distribution over time or severity."@en ;
+    dcterms:description "Time-series and distribution analysis."@en ;
     davi-meta:hasOption 
         davi-meta:opt_trend_date,
         davi-meta:opt_trend_severity,
         davi-meta:opt_trend_rating .
 
 davi-meta:opt_trend_date a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "Timeline (Date Published)" ;
-    davi-meta:targetProperty schema:datePublished . # Common to both!
+    davi-meta:uiLabel "Timeline (Published Date)" ;
+    davi-meta:targetProperty schema:datePublished .
 
 davi-meta:opt_trend_severity a davi-meta:VisualizationOption ;
     davi-meta:uiLabel "Severity Distribution (CVSS)" ;
@@ -156,22 +177,21 @@ davi-meta:opt_trend_rating a davi-meta:VisualizationOption ;
     davi-meta:uiLabel "Rating Distribution" ;
     davi-meta:targetProperty schema:ratingValue .
 
-# --- Extension 3: Layered/Graph Visualizations ---
-# This covers "Hierarchy" (NIST) and "Network" (MovieLens)
+# --- Module 3: Graph & Hierarchy ---
 davi-meta:viz_hierarchy a davi-meta:Visualization ;
-    davi-meta:uiLabel "Hierarchical View (Tree)" ;
-    dcterms:description "Visualize parent-child relationships."@en ;
+    davi-meta:uiLabel "Hierarchical Explorer" ;
+    dcterms:description "Explore tree structures like CWE."@en ;
     davi-meta:hasOption davi-meta:opt_layer_cwe .
 
 davi-meta:opt_layer_cwe a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "CWE Weakness Hierarchy" ;
+    davi-meta:uiLabel "CWE Weakness Tree" ;
     davi-meta:targetProperty skos:broader .
 
 davi-meta:viz_network a davi-meta:Visualization ;
-    davi-meta:uiLabel "Genome Network View" ;
-    dcterms:description "Visualize relevance connections."@en ;
+    davi-meta:uiLabel "Network Explorer" ;
+    dcterms:description "Explore graph connections."@en ;
     davi-meta:hasOption davi-meta:opt_layer_genome .
 
 davi-meta:opt_layer_genome a davi-meta:VisualizationOption ;
-    davi-meta:uiLabel "Tag Genome Relevance" ;
+    davi-meta:uiLabel "Tag Genome Network" ;
     davi-meta:targetProperty davi-mov:relevanceScore .

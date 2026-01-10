@@ -1,6 +1,5 @@
 import os
 
-# Allow environment variable override for Docker/Cloud deployment
 FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi/sparql")
 
 PREFIXES = """

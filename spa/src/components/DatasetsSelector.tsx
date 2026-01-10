@@ -20,7 +20,7 @@ export const DatasetSelector: React.FC = () => {
       }
     }
     void load();
-  });
+  }, []);
 
   if (!baseDataset && datasets.length === 0) {
     return (
