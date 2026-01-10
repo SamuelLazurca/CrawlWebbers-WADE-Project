@@ -27,7 +27,9 @@ export interface Dataset {
   number_of_downloads?: number;
   uploaded_by?: string;
   uploaded_by_url?: string;
-  supported_visualizations?: VisualizationModule[];
+  dimensions: AnalyzableProperty[];
+  metrics: AnalyzableProperty[];
+  supported_visualizations: VisualizationModule[];
 }
 
 export interface ItemsResponse<T> {
@@ -90,4 +92,22 @@ export interface NeighborhoodResponse {
   center_node: string;
   nodes: GraphNode[];
   links: GraphEdge[];
+}
+
+export interface AnalyzableProperty {
+  uri: string;
+  label: string;
+}
+
+export interface VisualizationOption {
+  id: string;
+  label: string;
+  target_property: string;
+}
+
+export interface VisualizationModule {
+  id: string;
+  label: string;
+  description?: string;
+  options: VisualizationOption[];
 }

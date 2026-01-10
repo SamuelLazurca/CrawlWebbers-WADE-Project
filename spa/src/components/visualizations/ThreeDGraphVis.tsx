@@ -20,7 +20,6 @@ export const ThreeDGraphVis = () => {
     async function loadGraph() {
       const res = await getGraphData(startUri);
 
-      // ForceGraph3D modifies objects in place, so we shallow copy to avoid strict mode issues
       const nodes = res.nodes.map(n => ({ ...n, id: n.id }));
       const links = res.links.map(l => ({ ...l }));
 
