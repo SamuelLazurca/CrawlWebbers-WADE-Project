@@ -68,55 +68,43 @@ def get_custom_analytics_query(
     dimension: str,
     metric: Optional[str],
     aggregation: AggregationType,
-    limit: int = 100
+    limit: int = 20
 ) -> List[TrendPoint]:
     """
-    **Custom Builder Mode:**
-    Generates a dynamic aggregation query based on Dimension (X-Axis) and Metric (Y-Axis).
-    Uses Property Paths `(!rdf:type)*` to find properties that might be nested.
+    Generează un query SPARQL dinamic pentru analiză personalizată.
+    - dimension: URI-ul proprietății pentru axa X (ex: nist:hasWeakness)
+    - metric: URI-ul proprietății pentru axa Y (ex: nist:baseScore)
     """
+    
+    # Validare de securitate de bază pentru URIs
     if not _is_safe_uri(dimension):
         raise HTTPException(status_code=400, detail="Invalid Dimension URI")
-
     if metric and not _is_safe_uri(metric):
         raise HTTPException(status_code=400, detail="Invalid Metric URI")
 
-    # 1. Determine Aggregation Function
-    agg_map = {
-        AggregationType.COUNT: "COUNT",
-        AggregationType.SUM: "SUM",
-        AggregationType.AVG: "AVG",
-        AggregationType.MAX: "MAX",
-        AggregationType.MIN: "MIN"
-    }
-    agg_func = agg_map.get(aggregation, "COUNT")
-
-    # 2. Build Metric Logic
-    # If no metric is provided, we just count the occurrences of the dimension (Frequency)
+    # 1. Logică pentru Selecție și Agregare
     if not metric:
-        metric_logic = ""
-        selection = "(COUNT(?s) as ?val)"
+        # Dacă nu avem metrică, facem frecvență (COUNT pe subiecți)
+        selection = "(COUNT(DISTINCT ?s) as ?val)"
+        metric_pattern = ""
     else:
-        # Semantic Path: Traverse graph to find the metric value (e.g., Vuln -> CVSS -> Score)
-        # (!rdf:type)+ means "follow any predicate (except type) 1 or more times"
-        metric_logic = f"?s (!rdf:type)+ <{metric}> ?metricRaw ."
-        selection = f"({agg_func}(xsd:decimal(?metricRaw)) as ?val)"
+        # Dacă avem metrică (ex: scor, preț), aplicăm funcția de agregare pe valorile ei
+        # Folosim xsd:decimal pentru a ne asigura că operațiile matematice funcționează
+        selection = f"({aggregation.value}(xsd:decimal(?metricRaw)) as ?val)"
+        metric_pattern = f"?s <{metric}> ?metricRaw ."
 
-    # 3. Build Dimension Logic
-    # We try to fetch a human-readable label for the dimension URI (e.g., Vendor Name)
-    dimension_logic = f"""
-        ?s (!rdf:type)+ <{dimension}> ?dimVal .
-
+    # 2. Logică pentru Dimensiune (Axa X)
+    # Extragem valoarea dimensiunii și încercăm să îi găsim un label
+    dimension_pattern = f"""
+        ?s <{dimension}> ?dimVal .
+        
         OPTIONAL {{ 
-            ?dimVal rdfs:label ?dimLabel 
+            ?dimVal rdfs:label | schema:name ?dimLabel 
         }}
-        OPTIONAL {{ 
-            ?dimVal schema:name ?dimLabel 
-        }}
-
-        BIND(COALESCE(?dimLabel, ?dimVal) as ?groupKey)
+        BIND(COALESCE(STR(?dimLabel), STR(?dimVal)) as ?groupKey)
     """
 
+    # 3. Construcția Query-ului Final
     query = f"""
     PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -125,30 +113,40 @@ def get_custom_analytics_query(
 
     SELECT ?groupKey {selection}
     WHERE {{
-        {dimension_logic}
-        {metric_logic}
+        {dimension_pattern}
+        {metric_pattern}
+        
+        # Filtrăm valorile goale sau invalide pentru metrică dacă este cazul
+        {"FILTER(BOUND(?metricRaw))" if metric else ""}
     }}
     GROUP BY ?groupKey
     ORDER BY DESC(?val)
     LIMIT {limit}
     """
 
-    results = run_sparql(query)
+    # Execuție și Procesare
+    try:
+        results = run_sparql(query)
+        data = []
+        
+        for row in results:
+            label = row["groupKey"]["value"]
+            # Curățăm label-ul dacă este un URI lung (luăm doar ultima parte)
+            if "http" in label and "/" in label:
+                label = label.split("/")[-1].split("#")[-1]
 
-    data = []
-    for row in results:
-        label = row["groupKey"]["value"]
+            raw_val = row["val"]["value"]
+            # Convertim valoarea la float sau int pentru frontend
+            try:
+                val = float(raw_val) if "." in str(raw_val) else int(raw_val)
+            except (ValueError, TypeError):
+                val = 0
 
-        # Parse the result value (might be of type float for AVG, int for COUNT)
-        raw_val = row["val"]["value"]
-        try:
-            if "." in raw_val:
-                val = float(raw_val)
-            else:
-                val = int(raw_val)
-        except ValueError:
-            val = 0
-
-        data.append(TrendPoint(label=label, count=val))
-
-    return data
+            data.append(TrendPoint(label=label, count=val))
+            
+        return data
+        
+    except Exception as e:
+        print(f"SPARQL Error: {str(e)}")
+        print(f"Query was: {query}")
+        raise HTTPException(status_code=500, detail="Error executing semantic query")
