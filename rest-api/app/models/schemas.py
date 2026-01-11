@@ -81,7 +81,7 @@ class TrendPoint(BaseModel):
 class TrendsResponse(BaseModel):
     property: str
     granularity: GranularityEnum
-    total_records: float
+    total_records: Optional[float]
     data: List[TrendPoint]
 
 
@@ -138,3 +138,19 @@ class FilterResultItem(BaseModel):
     label: str
     type: Optional[str] = None
     matches: Dict[str, Any] = {}
+
+
+# --- COMPARE EXTENSION MODELS ---
+
+class ComparisonItem(BaseModel):
+    property_uri: str
+    property_label: str
+    value: str
+    value_label: Optional[str] = None
+
+class ComparisonResponse(BaseModel):
+    entity_a: str
+    entity_b: str
+    common_properties: List[ComparisonItem] = []
+    unique_to_a: List[ComparisonItem] = []
+    unique_to_b: List[ComparisonItem] = []

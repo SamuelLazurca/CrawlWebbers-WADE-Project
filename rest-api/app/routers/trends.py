@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Query, HTTPException
+
 from app.models.schemas import TrendsResponse, GranularityEnum, AggregationType
 from app.services.trends_service import get_distribution_query, get_custom_analytics_query
 
