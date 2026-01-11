@@ -27,7 +27,7 @@ schema:Person a owl:Class ;
 # GENRE: The primary "Dimension" for MovieLens.
 # This tells the frontend: "You can Group By Genre."
 schema:genre 
-    a owl:DatatypeProperty ;
+    a owl:ObjectProperty ;
     davi-meta:isDimension "true"^^xsd:boolean ;
     davi-meta:uiLabel "Movie Genre" .
 

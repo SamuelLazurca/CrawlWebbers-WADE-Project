@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import {useEffect, useState} from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import ForceGraph3D from 'react-force-graph-3d';
-import { useSidebarContext } from '../../context/sidebarContext';
-import { getGraphData } from '../../lib/graph';
-import { cn } from '../../lib/utils';
-import type { GraphNode, GraphEdge } from '../../types';
+import {useSidebarContext} from '../../context/sidebarContext';
+import {getGraphData} from '../../lib/graph';
+import {cn} from '../../lib/utils';
+import type {GraphEdge, GraphNode} from '../../types';
 
 export default function CombinedGraphVis() {
   const { baseDataset } = useSidebarContext();
@@ -14,7 +14,7 @@ export default function CombinedGraphVis() {
     links: [],
   });
   const startUri = baseDataset?.id === 'nist-nvd'
-    ? 'https://nvd.nist.gov/vuln/detail/CVE-2021-44228'
+    ? 'https://nvd.nist.gov/vuln/detail/CVE-1999-0199'
     : 'https://www.imdb.com/title/tt0114709';
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function CombinedGraphVis() {
     void loadGraph();
   }, [baseDataset, startUri]);
 
-  const handleNodeClick = async (node: any) => {
+  const handleNodeClick = async (node: GraphNode) => {
     try {
       console.log('Expanding node:', node.id);
       const res = await getGraphData(node.id);
