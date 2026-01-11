@@ -46,7 +46,7 @@ export const CompareCard: React.FC = () => {
               const id = e.target.value;
               if (id) setSelectedIds((prev) => (prev.includes(id) ? prev : [...prev, id]));
             }}
-            className="bg-slate-800/50 border text-xs border-slate-700 text-slate-200 px-3 py-2 rounded-lg cursor-pointer hover:border-slate-600 focus:outline-none focus:border-cyan-400"
+            className="bg-slate-800/50 border text-xs border-slate-700 text-slate-200 px-4 py-2 rounded-lg cursor-pointer hover:border-slate-600 focus:outline-none focus:border-cyan-400 w-50 truncate"
           >
             <option value="">Select dataset...</option>
             {options.map((d) => (
@@ -63,7 +63,7 @@ export const CompareCard: React.FC = () => {
               key={d.id}
               className="px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-sm flex items-center gap-2"
             >
-              <span>{d.name}</span>
+              <span className='line-clamp-1' >{d.name}</span>
               <button
                 onClick={() => setSelectedIds((prev) => prev.filter((id) => id !== d.id))}
                 className="text-xs text-slate-400 hover:text-rose-400 ml-2"

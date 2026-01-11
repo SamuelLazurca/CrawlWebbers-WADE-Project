@@ -4,7 +4,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 interface FilterState {
   selectedFilters: Map<string, Set<string>>;
   searchQuery: string;
-  activeTab: 'presets' | 'builder' | 'explorer' | 'compare';
+  activeTab: 'presets' | 'builder' | 'explorer' | 'compare' | 'filter';
 
   addFilter: (property: string, value: string) => void;
   removeFilter: (property: string, value: string) => void;

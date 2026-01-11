@@ -36,13 +36,6 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
 
   return (
     <div className='relative group'>
-      {isDateProperty && (
-        <div className='absolute top-4 right-12 z-10 flex items-center gap-1 text-xs text-slate-400 bg-slate-800 px-2 py-1 rounded border border-slate-700'>
-          <Calendar size={12} />
-          <span>Grouped by Year</span>
-        </div>
-      )}
-
       {loading && (
         <div className='absolute inset-0 flex items-center justify-center bg-slate-900/20 backdrop-blur-[2px] z-20 rounded-2xl'>
           <Loader2 className='w-6 h-6 text-cyan-500 animate-spin' />
