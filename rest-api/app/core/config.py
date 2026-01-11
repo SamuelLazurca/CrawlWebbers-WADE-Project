@@ -1,6 +1,10 @@
 import os
 
+from dotenv import load_dotenv
+load_dotenv()
+
 FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi/sparql")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 
 PREFIXES = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
