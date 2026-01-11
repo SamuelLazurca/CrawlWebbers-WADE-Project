@@ -79,12 +79,32 @@ export const DatasetSelector: React.FC = () => {
       </div>
 
       {baseDataset && (
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <>
+        {baseDataset.description && (
+          <p className="text-sm text-slate-400 italic">
+            {baseDataset.description}
+          </p>
+        )}
+        <div className="grid grid-cols-2 gap-2 text-sm py-3">
           <DatasetMeta label="Files" value={baseDataset.number_of_files} highlight />
           <DatasetMeta label="Downloads" value={baseDataset.number_of_downloads} highlight />
           <DatasetMeta label="Size" value={formatSize(baseDataset.size_in_bytes)} />
           <DatasetMeta label="Added" value={formatDate(baseDataset.added_date)} />
         </div>
+        {baseDataset.uploaded_by_url && baseDataset.uploaded_by && (
+          <p className="text-xs text-slate-500 mt-2">
+            Uploaded by{' '}
+            <a
+              href={baseDataset.uploaded_by_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-400 hover:underline"
+            >
+              {baseDataset.uploaded_by}
+            </a>
+          </p>
+        )}
+        </>
       )}
     </div>
   );

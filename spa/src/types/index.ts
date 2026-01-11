@@ -20,6 +20,7 @@ export interface VisualizationModule {
 export interface Dataset {
   id: string;
   name?: string;
+  description?: string;
   url?: string;
   size_in_bytes?: number;
   added_date?: string;
@@ -110,4 +111,37 @@ export interface VisualizationModule {
   label: string;
   description?: string;
   options: VisualizationOption[];
+}
+
+export const FilterOperator = {
+  TRANSITIVE: 'TRANSITIVE',
+  CONTAINS: 'CONTAINS',
+  NOT_CONTAINS: 'NOT_CONTAINS',
+  EQUALS: 'EQUALS',
+  NOT_EQUALS: 'NOT_EQUALS',
+  GT: 'GT',
+  LT: 'LT',
+};
+
+export type FilterOperator = typeof FilterOperator[keyof typeof FilterOperator];
+
+export interface FilterItem {
+  property_uri: string;
+  operator: FilterOperator;
+  value: string | number;
+  path_to_target?: string | null;
+}
+
+export interface FilterRequest {
+  dataset_class: string;
+  filters: FilterItem[];
+  limit?: number;
+  offset?: number;
+}
+
+export interface FilterResultItem {
+  uri: string;
+  label: string;
+  type?: string;
+  matches?: Record<string, string>;
 }
