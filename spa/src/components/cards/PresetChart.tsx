@@ -11,8 +11,6 @@ interface PresetChartProps {
 export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
   const [data, setData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
-  const [granularity, setGranularity] = useState<'year' | 'none'>('none');
-
   const isDateProperty =
     option.target_property.toLowerCase().includes('date') ||
     option.label.toLowerCase().includes('timeline');
