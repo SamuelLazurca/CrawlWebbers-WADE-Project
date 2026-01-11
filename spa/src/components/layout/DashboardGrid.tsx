@@ -4,7 +4,8 @@ import { useSidebarContext } from '../../context/sidebarContext';
 import { PresetChart } from '../cards/PresetChart';
 import { AnalyticsBuilder } from '../analytics/AnalyticsBuilder';
 import CombinedGraphVis from '../visualizations/GraphVis';
-import { CompareCard } from '../layout/CompareCard';
+import { CompareCard } from './CompareCard';
+import { FilterPanel } from '../cards/FilterPanel';
 
 export const DashboardGrid: React.FC = () => {
   const { activeTab } = useFilterStore();
@@ -43,7 +44,7 @@ export const DashboardGrid: React.FC = () => {
             onChange={(e) =>
               setSlotConfigs((prev) => ({ ...prev, [slotId]: e.target.value }))
             }
-            className='bg-slate-800 text-xs text-slate-300 border border-slate-700 rounded px-2 py-1 outline-none hover:border-emerald-500 transition-colors cursor-pointer'
+            className='bg-slate-800 text-xs text-slate-300 border border-slate-700 rounded px-2 py-1 outline-none hover:border-emerald-500 transition-colors cursor-pointer truncate'
           >
             {allOptions.map((opt) => (
               <option key={opt.id} value={opt.id}>
@@ -78,6 +79,9 @@ export const DashboardGrid: React.FC = () => {
       {activeTab === 'builder' && <AnalyticsBuilder />}
       {activeTab === 'explorer' && <CombinedGraphVis />}
       {activeTab === 'compare' && <CompareCard />}
+      {activeTab === 'filter' && (
+        <FilterPanel datasetClass={'http://schema.org/Movie'} />
+      )}
     </div>
   );
 };

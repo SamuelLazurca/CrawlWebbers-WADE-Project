@@ -71,7 +71,7 @@ export default function CombinedGraphVis() {
 
   return (
     <div className={cn(
-      'rounded-2xl overflow-hidden border border-slate-700/50 h-150 bg-slate-900 relative',
+      'rounded-2xl overflow-hidden border border-slate-700/50 h-96 bg-slate-900 relative',
       'shadow-2xl shadow-black/50'
     )}>
       {is3D && (
