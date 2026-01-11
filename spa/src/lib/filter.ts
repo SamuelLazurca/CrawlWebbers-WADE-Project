@@ -1,6 +1,6 @@
 import type { FilterRequest, FilterItem, FilterResultItem } from '../types/index';
 
-const API_BASE = 'http://localhost:8100/api/v1';
+const API_BASE = 'http://localhost:8000/api/v1';
 
 export async function runFilterQuery(req: FilterRequest): Promise<FilterResultItem[]> {
   const res = await fetch(`${API_BASE}/filter/advanced`, {
