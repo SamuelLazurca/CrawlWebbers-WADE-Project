@@ -5,6 +5,15 @@ export type Result<T> =
 
 // --- DATASET & CONFIGURATION TYPES ---
 
+export interface AnalyzableProperty {
+  uri: string;
+  label: string;
+  type: 'dimension' | 'metric';
+  visualization_type?: string;
+  default_aggregation?: string;
+  allowed_aggregations?: string[];
+}
+
 export interface VisualizationOption {
   id: string;
   label: string;
@@ -12,25 +21,41 @@ export interface VisualizationOption {
 }
 
 export interface VisualizationModule {
-  id: string; // e.g., "davi-meta:viz_trends"
+  id: string;
   label: string;
+  description?: string;
   options: VisualizationOption[];
+}
+
+export interface DataView {
+  id: string;
+  label: string;
+  target_class: string;
+  icon: string;
+  description?: string;
+  example_resource?: string;
+
+  dimensions: AnalyzableProperty[];
+  metrics: AnalyzableProperty[];
+  supported_visualizations: VisualizationModule[];
 }
 
 export interface Dataset {
   id: string;
-  name?: string;
-  description?: string;
+  name: string;
+  description: string;
   url?: string;
-  size_in_bytes?: number;
+  size_in_bytes: number;
+  number_of_files: number;
+  number_of_downloads: number;
   added_date?: string;
-  number_of_files?: number;
-  number_of_downloads?: number;
   uploaded_by?: string;
   uploaded_by_url?: string;
-  dimensions: AnalyzableProperty[];
-  metrics: AnalyzableProperty[];
-  supported_visualizations: VisualizationModule[];
+
+  // FIX: Added this back so baseDataset.example_resource works as a fallback
+  example_resource?: string;
+
+  views: DataView[];
 }
 
 export interface ItemsResponse<T> {
@@ -52,13 +77,6 @@ export interface FilterFacet {
   property: string;
   values: Array<{ label: string; count: number }>;
   isExpanded?: boolean;
-}
-
-export interface ChartData {
-  label: string;
-  value: number;
-  percentage?: number;
-  trend?: 'up' | 'down' | 'stable';
 }
 
 export interface TrendPoint {
@@ -95,23 +113,7 @@ export interface NeighborhoodResponse {
   links: GraphEdge[];
 }
 
-export interface AnalyzableProperty {
-  uri: string;
-  label: string;
-}
-
-export interface VisualizationOption {
-  id: string;
-  label: string;
-  target_property: string;
-}
-
-export interface VisualizationModule {
-  id: string;
-  label: string;
-  description?: string;
-  options: VisualizationOption[];
-}
+// --- FILTERING TYPES ---
 
 export const FilterOperator = {
   TRANSITIVE: 'TRANSITIVE',
@@ -121,7 +123,7 @@ export const FilterOperator = {
   NOT_EQUALS: 'NOT_EQUALS',
   GT: 'GT',
   LT: 'LT',
-};
+} as const;
 
 export type FilterOperator = typeof FilterOperator[keyof typeof FilterOperator];
 
@@ -133,7 +135,7 @@ export interface FilterItem {
 }
 
 export interface FilterRequest {
-  dataset_class: string;
+  target_class: string;
   filters: FilterItem[];
   limit?: number;
   offset?: number;
@@ -145,3 +147,15 @@ export interface FilterResultItem {
   type?: string;
   matches?: Record<string, string>;
 }
+
+export type RechartsData = Record<string, unknown>;
+
+export interface TooltipPayloadItem {
+  name?: string;
+  value?: string | number;
+}
+
+export type GraphEmptyState =
+  | { kind: 'no-dataset' }
+  | { kind: 'missing-start-uri' }
+  | { kind: 'ready'; startUri: string };

@@ -1,7 +1,7 @@
 import React from 'react';
-import { X } from 'lucide-react';
-import { DatasetSelector } from '../DatasetsSelector';
-import { cn } from '../../lib/utils';
+import {X} from 'lucide-react';
+import {DatasetSelector} from '../DatasetSelector.tsx';
+import {cn} from '../../lib/utils';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -17,7 +17,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       )}
       aria-hidden={!isOpen && true}
     >
-      {/* Buton închidere numai pe mobile */}
+      {/* Close button only on mobile */}
       <div className='p-4 md:hidden flex justify-end'>
         <button
           onClick={onClose}

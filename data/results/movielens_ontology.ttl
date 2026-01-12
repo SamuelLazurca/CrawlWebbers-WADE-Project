@@ -10,95 +10,129 @@
 # --- ONTOLOGY METADATA ---
 davi-mov:MovieLensOntology a owl:Ontology ;
     rdfs:label "DaVi MovieLens Extensions"@en ;
-    dcterms:description "Ontology for MovieLens 20M Dataset extensions (Genome & Tagging), tagged for DaVi's dynamic visualization engine."@en ;
+    dcterms:description "Ontology for MovieLens 20M, mapped to DaVi Meta-Ontology."@en ;
     owl:imports <http://schema.org/> .
 
-schema:Movie a owl:Class ;
-    rdfs:label "Movie"@en .
+# --- CORE CONCEPTS (ENTITIES) ---
+# We mark these as davi-meta:Concept so the UI lists them as 'Analysable Entities'
 
-schema:Rating a owl:Class ;
-    rdfs:label "Rating Action"@en .
+schema:Movie a owl:Class, davi-meta:Concept ;
+    rdfs:label "Movie"@en ;
+    davi-meta:uiLabel "Movies" ;
+    davi-meta:icon "film" .
 
-schema:Person a owl:Class ;
-    rdfs:label "User / Person"@en .
+schema:Rating a owl:Class, davi-meta:Concept ;
+    rdfs:label "Rating Action"@en ;
+    davi-meta:uiLabel "User Ratings" .
 
-# --- Properties for Dynamic Visualization (The LEGO Blocks) ---
+schema:Person a owl:Class, davi-meta:Concept ;
+    rdfs:label "User / Person"@en ;
+    davi-meta:uiLabel "Users" .
 
-# GENRE: The primary "Dimension" for MovieLens.
-# This tells the frontend: "You can Group By Genre."
-schema:genre 
-    a owl:ObjectProperty ;
-    davi-meta:isDimension "true"^^xsd:boolean ;
-    davi-meta:uiLabel "Movie Genre" .
+davi-mov:TagApplication a owl:Class, davi-meta:Concept ;
+    rdfs:label "Tag Application Event"@en ;
+    davi-meta:uiLabel "User Tags" ;
+    davi-meta:icon "tag" ;
+    dcterms:description "An event where a user applies a free-text tag to a movie."@en .
 
-# RATING VALUE: The primary "Metric" for aggregation.
-# This tells the frontend: "You can Calculate Average/Max Rating."
-schema:ratingValue
-    a owl:DatatypeProperty ;
-    davi-meta:isMetric "true"^^xsd:boolean ;
-    davi-meta:uiLabel "User Rating (0.5 - 5.0)" .
-
-# DATE: A Time Dimension.
-# This tells the frontend: "You can use this for Time Series trends."
-schema:datePublished
-    a owl:DatatypeProperty ;
-    davi-meta:isDimension "true"^^xsd:boolean ;
-    davi-meta:uiLabel "Date/Timestamp" .
-
-# Reified Class for Tagging (User <-> Movie)
-davi-mov:TagApplication a owl:Class ;
-    rdfs:label "Tag Application"@en ;
-    rdfs:subClassOf schema:CreateAction ;
-    dcterms:description "An event where a user applies a free-text tag to a movie"@en .
-
-# Genome Tag Definition (Specific to MovieLens Project)
-davi-mov:GenomeTag a owl:Class ;
-    rdfs:label "Genome Tag"@en ;
-    dcterms:description "A controlled vocabulary tag from the Tag Genome"@en .
-
-# Reified Class for Genome Relevance (Movie <-> GenomeTag)
-davi-mov:GenomeRelevance a owl:Class ;
+davi-mov:GenomeRelevance a owl:Class, davi-meta:Concept ;
     rdfs:label "Genome Relevance Prediction"@en ;
-    dcterms:description "The calculated relevance of a Genome Tag to a specific Movie"@en .
+    davi-meta:uiLabel "Genome Scores" ;
+    davi-meta:icon "bar-chart" ;
+    dcterms:description "The calculated relevance of a Genome Tag to a specific Movie."@en .
 
+davi-mov:GenomeTag a owl:Class, davi-meta:Concept ;
+    rdfs:label "Genome Tag"@en ;
+    davi-meta:uiLabel "Genome Tags" .
 
-# --- Tagging Properties ---
+# --- DIMENSIONS (CATEGORICAL & TEMPORAL) ---
 
+# GENRE: Categorical Dimension
+schema:genre a owl:ObjectProperty ;
+    rdfs:label "Movie Genre"@en ;
+    rdfs:domain schema:Movie ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Genre" ;
+    davi-meta:visualizationType "Categorical" .
+
+# DATE: Temporal Dimension (Crucial for Timeline Charts)
+schema:datePublished a owl:DatatypeProperty ;
+    rdfs:label "Release Date"@en ;
+    rdfs:domain schema:Movie ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Release Year" ;
+    davi-meta:visualizationType "Temporal" ;
+    davi-meta:dateFormat "YYYY-MM-DD" .
+
+# TAG CONTENT: Text Dimension (Word Clouds)
 davi-mov:tagContent a owl:DatatypeProperty ;
     rdfs:label "Tag Text"@en ;
     rdfs:domain davi-mov:TagApplication ;
     rdfs:range xsd:string ;
-    # We tag this as a Dimension so users can see "Top 10 most common tags"
     davi-meta:isDimension "true"^^xsd:boolean ;
-    davi-meta:uiLabel "User Tag Text" .
+    davi-meta:uiLabel "User Tag" ;
+    davi-meta:visualizationType "Text" .
+
+# TAGGING TIME: Temporal Dimension
+schema:startTime a owl:DatatypeProperty ;
+    rdfs:label "Tagging Date"@en ;
+    rdfs:domain davi-mov:TagApplication ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Tagging Date" ;
+    davi-meta:visualizationType "Temporal" .
+
+# --- METRICS (NUMERICAL) ---
+
+# RATING: The Primary Metric
+schema:ratingValue a owl:DatatypeProperty ;
+    rdfs:label "Rating Value"@en ;
+    rdfs:domain schema:Rating ;
+    rdfs:range xsd:decimal ;
+    # It can be a dimension (group by score 1, 2, 3)
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    # It is primarily a metric (Average Rating)
+    davi-meta:isMetric "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Rating Score" ;
+    davi-meta:defaultAggregation "AVG" ;   # <--- NEW: Tells engine to Average by default
+    davi-meta:allowedAggregations "AVG", "COUNT", "MIN", "MAX" .
+
+# GENOME RELEVANCE: Metric
+davi-mov:relevanceScore a owl:DatatypeProperty ;
+    rdfs:label "Relevance Score"@en ;
+    rdfs:domain davi-mov:GenomeRelevance ;
+    rdfs:range xsd:decimal ;
+    davi-meta:isMetric "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Tag Relevance" ;
+    davi-meta:defaultAggregation "AVG" .
+
+# --- RELATIONSHIPS (Navigation) ---
+
+schema:author a owl:ObjectProperty ;
+    rdfs:domain schema:Rating ;
+    rdfs:range schema:Person .
+
+schema:itemReviewed a owl:ObjectProperty ;
+    rdfs:domain schema:Rating ;
+    rdfs:range schema:Movie .
 
 davi-mov:taggedBy a owl:ObjectProperty ;
-    rdfs:subPropertyOf schema:agent ;
+    rdfs:label "Tagged By"@en ;
     rdfs:domain davi-mov:TagApplication ;
     rdfs:range schema:Person .
 
 davi-mov:tagsMovie a owl:ObjectProperty ;
-    rdfs:subPropertyOf schema:object ;
+    rdfs:label "Tagged Movie"@en ;
     rdfs:domain davi-mov:TagApplication ;
     rdfs:range schema:Movie .
 
-# --- Genome Relevance Properties ---
-
 davi-mov:isRelevantTo a owl:ObjectProperty ;
-    rdfs:label "is relevant to"@en ;
+    rdfs:label "Relevant Movie"@en ;
     rdfs:domain davi-mov:GenomeRelevance ;
     rdfs:range schema:Movie .
 
 davi-mov:hasGenomeTag a owl:ObjectProperty ;
-    rdfs:label "has genome tag"@en ;
+    rdfs:label "Genome Tag"@en ;
     rdfs:domain davi-mov:GenomeRelevance ;
-    rdfs:range davi-mov:GenomeTag .
-
-# RELEVANCE SCORE: A Critical Metric for this dataset.
-# Allows users to analyze "Strength of Tag Association".
-davi-mov:relevanceScore a owl:DatatypeProperty ;
-    rdfs:label "relevance score"@en ;
-    rdfs:domain davi-mov:GenomeRelevance ;
-    rdfs:range xsd:decimal ;
-    davi-meta:isMetric "true"^^xsd:boolean ;
-    davi-meta:uiLabel "Genome Relevance Score (0-1)" .
+    rdfs:range davi-mov:GenomeTag ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Genome Tag Category" .

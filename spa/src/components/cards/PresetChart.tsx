@@ -1,26 +1,40 @@
-import React, { useEffect, useState } from 'react';
-import type { VisualizationOption, TrendPoint } from '../../types/index';
-import { getTrendData } from '../../lib/trends';
-import { ChartCard } from '../cards/ChartCard';
-import { Loader2, Calendar } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import type {TrendPoint, VisualizationOption} from '../../types';
+import {getTrendData} from '../../lib/trends';
+import {ChartCard} from './ChartCard';
+import {Loader2} from 'lucide-react';
+import {useSidebarContext} from '../../context/sidebarContext';
 
 interface PresetChartProps {
   option: VisualizationOption;
 }
 
 export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
+  const { currentView } = useSidebarContext();
   const [data, setData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Heuristic to decide chart type
   const isDateProperty =
     option.target_property.toLowerCase().includes('date') ||
     option.label.toLowerCase().includes('timeline');
 
   useEffect(() => {
     const loadData = async () => {
+      // If no view is selected, we can't fetch view-specific data
+      if (!currentView) return;
+
       setLoading(true);
       try {
         const currentGran = isDateProperty ? 'year' : 'none';
-        const result = await getTrendData(option.target_property, currentGran);
+
+        // PASS currentView.id to the API
+        const result = await getTrendData(
+          option.target_property,
+          currentView.id,
+          currentGran
+        );
+
         setData(result.data);
       } catch (error) {
         console.error('Failed to load preset data:', error);
@@ -30,7 +44,7 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
     };
 
     void loadData();
-  }, [option.target_property, isDateProperty]);
+  }, [option.target_property, isDateProperty, currentView]);
 
   return (
     <div className='relative group'>
@@ -40,9 +54,9 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
         </div>
       )}
 
-      <ChartCard
+      <ChartCard<TrendPoint>
         title={option.label}
-        subtitle={`Source: ${option.target_property}`}
+        subtitle={currentView ? `${currentView.label} Analysis` : 'Loading...'}
         type={isDateProperty ? 'line' : 'bar'}
         data={data}
         dataKey='count'

@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Sidebar } from './components/layout/Sidebar';
-import { Header } from './components/layout/Header';
-import { DashboardGrid } from './components/layout/DashboardGrid';
-import { SidebarProvider } from './context/sidebarContext';
+import {useEffect, useState} from 'react';
+import {Sidebar} from './components/layout/Sidebar';
+import {Header} from './components/layout/Header';
+import {DashboardGrid} from './components/layout/DashboardGrid';
+import {SidebarProvider} from './context/sidebarContext';
 
 function App() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -15,7 +15,7 @@ function App() {
   }, [isSidebarOpen]);
 
   return (
-    <div className='min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100'>
+    <div className='min-h-screen bg-linear-to-br from-slate-950 via-slate-900 to-slate-950 text-slate-100'>
       <SidebarProvider>
         <Header onToggleSidebar={() => setIsSidebarOpen((v) => !v)} />
 

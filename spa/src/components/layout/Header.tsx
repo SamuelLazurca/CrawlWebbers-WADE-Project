@@ -1,15 +1,15 @@
 import React from 'react';
-import { useFilterStore } from '../../stores/filterStore';
-import { useSidebarContext } from '../../context/sidebarContext';
-import { cn } from '../../lib/utils';
-import { Wand2, Share2, Repeat, LayoutDashboard, Menu } from 'lucide-react';
+import {useFilterStore} from '../../stores/filterStore';
+import {useSidebarContext} from '../../context/sidebarContext';
+import {cn} from '../../lib/utils';
+import {ChevronRight, Filter, LayoutDashboard, Menu, Repeat, Share2, Wand2} from 'lucide-react';
 
 const TABS = [
   { id: 'presets' as const, label: 'Presets', icon: LayoutDashboard },
-  { id: 'builder' as const, label: 'Analytics Builder', icon: Wand2 },
-  { id: 'explorer' as const, label: 'Graph Explorer', icon: Share2 },
+  { id: 'builder' as const, label: 'Analytics', icon: Wand2 },
+  { id: 'explorer' as const, label: 'Graph', icon: Share2 },
   { id: 'compare' as const, label: 'Compare', icon: Repeat },
-  { id: 'filter' as const, label: 'Filter Data', icon: Repeat },
+  { id: 'filter' as const, label: 'Filter', icon: Filter },
 ];
 
 interface HeaderProps {
@@ -18,7 +18,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const { activeTab, setActiveTab } = useFilterStore();
-  const { baseDataset } = useSidebarContext();
+  const { baseDataset, currentView } = useSidebarContext();
 
   return (
     <header
@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
       )}
     >
       <div className='h-16 px-4 md:px-8 flex items-center justify-between gap-4'>
-        <div className='flex items-center gap-3 min-w-0'>
+        <div className='flex items-center gap-4 min-w-0'>
           {/* Hamburger – mobile only */}
           <button
             onClick={onToggleSidebar}
@@ -39,33 +39,35 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <Menu size={20} />
           </button>
 
-          <div className='min-w-0'>
+          <div className='min-w-0 flex flex-col'>
             <h1 className='text-base md:text-xl font-bold text-white tracking-tight truncate'>
               Semantic Data Explorer
             </h1>
-            <p className='hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest font-bold'>
-              Knowledge Graph Analysis
-            </p>
+
+            {/* Breadcrumbs for Context */}
+            {baseDataset ? (
+              <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-medium text-slate-400 animate-in fade-in slide-in-from-left-2">
+                <span className="truncate max-w-25 md:max-w-37.5">{baseDataset.name}</span>
+                {currentView && (
+                  <>
+                    <ChevronRight size={10} className="text-slate-600" />
+                    <span className="text-emerald-400 truncate max-w-25 md:max-w-37.5">
+                                {currentView.label}
+                            </span>
+                  </>
+                )}
+              </div>
+            ) : (
+              <p className='hidden sm:block text-[10px] text-slate-500 uppercase tracking-widest font-bold'>
+                Knowledge Graph Analysis
+              </p>
+            )}
           </div>
-
-          {baseDataset && (
-            <div className='hidden md:flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full'>
-              <span className='relative flex h-2 w-2'>
-                <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75' />
-                <span className='relative inline-flex rounded-full h-2 w-2 bg-emerald-500' />
-              </span>
-              <span className='text-xs font-medium text-emerald-400 truncate max-w-[160px]'>
-                {baseDataset.name}
-              </span>
-            </div>
-          )}
         </div>
-
-        <div className='flex items-center gap-3'></div>
       </div>
 
       <div className='px-2 md:px-8 bg-slate-900/40 border-t border-slate-800'>
-        <div className='flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700'>
+        <div className='flex gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-700 pb-0'>
           {TABS.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -75,7 +77,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  'relative flex items-center gap-2 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors',
+                  'relative flex items-center gap-2 px-4 md:px-6 py-3 text-sm font-medium whitespace-nowrap transition-colors outline-none',
                   isActive
                     ? 'text-emerald-400'
                     : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'

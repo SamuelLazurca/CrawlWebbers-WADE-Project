@@ -1,4 +1,6 @@
+from typing import Optional
 from fastapi import APIRouter, Query, HTTPException
+
 from app.models.schemas import TrendsResponse, GranularityEnum, AggregationType
 from app.services.trends_service import get_distribution_query, get_custom_analytics_query
 
@@ -8,15 +10,17 @@ router = APIRouter()
 @router.get("/distribution", response_model=TrendsResponse)
 def get_property_distribution(
     target_property: str = Query(..., description="RDF Property URI"),
+    view_id: Optional[str] = Query(None,
+                                   description="The View Context (e.g. view_movielens_movies) to isolate data."),
     granularity: GranularityEnum = Query(GranularityEnum.NONE),
     limit: int = 100
 ):
     """
     **Preset Mode**: Simple distribution counting.
-    Useful for 'Quick Start' charts defined in VisualizationOptions.
+    If `view_id` is provided, analytics are scoped to that View's target class.
     """
     try:
-        data = get_distribution_query(target_property, granularity, limit)
+        data = get_distribution_query(target_property, view_id, granularity, limit)
         total = sum(d.count for d in data)
 
         return TrendsResponse(
@@ -31,23 +35,22 @@ def get_property_distribution(
 
 @router.get("/custom", response_model=TrendsResponse)
 def get_custom_analytics(
-    dimension: str = Query(..., description="X-Axis: The grouping property URI (must be a Dimension)"),
-    metric: str = Query(None,
-                        description="Y-Axis: The property to aggregate (must be a Metric). Defaults to Count if None."),
-    aggregation: AggregationType = Query(AggregationType.COUNT,
-                                         description="Math operation (AVG, SUM, COUNT, etc.)"),
+    dimension: str = Query(..., description="X-Axis: Grouping property"),
+    metric: str = Query(None, description="Y-Axis: Aggregation property"),
+    view_id: Optional[str] = Query(None, description="The View Context to isolate data."),
+    aggregation: AggregationType = Query(AggregationType.COUNT, description="Math operation"),
     limit: int = 100
 ):
     """
     **Custom Builder Mode**: Dynamic aggregation.
-    Allows queries like 'Average Rating by Genre' or 'Max CVSS Score by Vendor'.
     """
     try:
-        # This function will need to be implemented in your services update
-        data = get_custom_analytics_query(dimension, metric, aggregation, limit)
+        data = get_custom_analytics_query(dimension, metric, view_id, aggregation, limit)
 
-        # Calculate total for reference (if it makes sense for the aggregation)
-        total = sum(d.count for d in data) if data else 0
+        # Calculate total only if it makes sense (e.g., not for AVG)
+        total = 0
+        if data and aggregation in [AggregationType.COUNT, AggregationType.SUM]:
+            total = sum(d.count for d in data)
 
         return TrendsResponse(
             property=f"{aggregation.value}({metric or 'records'}) by {dimension}",

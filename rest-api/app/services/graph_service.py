@@ -1,130 +1,83 @@
 from typing import List, Dict, Optional
 
+from fastapi import HTTPException
+
 from app.core.sparql import run_sparql
 from app.models.schemas import GraphResponse, GraphNode, GraphLink
+from app.utils.sparql_queries import (
+    build_neighborhood_query,
+    build_hierarchy_query,
+    build_view_target_class_query
+)
+from app.utils.helpers import unpack_sparql_row, is_safe_uri
 
 
-def get_node_neighborhood(
-    resource_uri: str,
-    limit: int = 100
-) -> GraphResponse:
-    """
-    Fetches the immediate graph neighborhood (1-hop) for a specific resource.
-    """
-    # Note: Global PREFIXES are injected by run_sparql, so we don't need to repeat them here.
-    query = f"""
-    SELECT ?s ?p ?o ?sLabel ?oLabel ?sType ?oType
-    WHERE {{
-        BIND(<{resource_uri}> AS ?center)
+def _get_target_class(view_id: str) -> Optional[str]:
+    """Helper to fetch the Target Class for a View"""
+    if not view_id:
+        return None
+    results = run_sparql(build_view_target_class_query(view_id))
+    if results:
+        return unpack_sparql_row(results[0], "targetClass")
+    return None
 
-        {{
-            # Outgoing Edges: Center -> ?p -> ?o
-            ?center ?p ?o .
-            BIND(?center AS ?s)
-        }}
-        UNION
-        {{
-            # Incoming Edges: ?s -> ?p -> Center
-            ?s ?p ?center .
-            BIND(?center AS ?o)
-        }}
 
-        # Get Labels
-        OPTIONAL {{ ?s rdfs:label ?sLabel }}
-        OPTIONAL {{ ?s schema:name ?sLabel }}
-        OPTIONAL {{ ?s skos:prefLabel ?sLabel }}
+def get_node_neighborhood(resource_uri: str, view_id: Optional[str], limit: int = 100) -> GraphResponse:
+    if not is_safe_uri(resource_uri):
+        raise HTTPException(status_code=400, detail="Invalid Resource URI")
 
-        OPTIONAL {{ ?o rdfs:label ?oLabel }}
-        OPTIONAL {{ ?o schema:name ?oLabel }}
-        OPTIONAL {{ ?o skos:prefLabel ?oLabel }}
+    # 1. (Optional) We could use target_class to filter,
+    # but for neighborhood exploration, it's often better to see "everything connected".
+    # We pass it just in case we want to prioritize nodes of the same type.
+    target_class = _get_target_class(view_id)
 
-        # Get Types for coloring
-        OPTIONAL {{ ?s a ?sType }}
-        OPTIONAL {{ ?o a ?oType }}
-    }}
-    LIMIT {limit}
-    """
-
+    query = build_neighborhood_query(resource_uri, target_class, limit)
     results = run_sparql(query)
+
     return _transform_sparql_to_graph(results, center_node=resource_uri)
 
 
 def get_hierarchy_tree(
-    root_node: Optional[str],
-    child_property: str,
-    limit: int = 100
+        root_node: Optional[str],
+        child_property: str,
+        view_id: Optional[str],
+        limit: int = 100
 ) -> GraphResponse:
-    """
-    Fetches a tree structure based on a parent-child property (e.g., skos:narrower).
-    - If root_node is provided: Fetches its children.
-    - If root_node is None: Tries to find 'Top Concepts' (nodes with no parents).
-    """
+    if not is_safe_uri(child_property):
+        raise HTTPException(status_code=400, detail="Invalid Property URI")
 
-    # 1. Build the specific WHERE clause based on whether we have a root
-    if root_node:
-        # Fetch children of a specific root
-        where_logic = f"""
-            BIND(<{root_node}> AS ?parent)
-            ?parent <{child_property}> ?child .
-        """
-    else:
-        # Fetch Top Roots (Nodes that are subjects of the property but never objects)
-        # This assumes the property points Down (Parent -> Child)
-        where_logic = f"""
-            ?parent <{child_property}> ?child .
-            FILTER NOT EXISTS {{ ?grandparent <{child_property}> ?parent }}
-        """
+    # 1. Resolve Scope (Critical for Layered Visualization)
+    target_class = _get_target_class(view_id)
 
-    query = f"""
-    SELECT DISTINCT ?parent ?child ?parentLabel ?childLabel ?parentType ?childType
-    WHERE {{
-        {where_logic}
-
-        # Labels for Parent
-        OPTIONAL {{ ?parent rdfs:label ?parentLabel }}
-        OPTIONAL {{ ?parent schema:name ?parentLabel }}
-        OPTIONAL {{ ?parent skos:prefLabel ?parentLabel }}
-        OPTIONAL {{ ?parent a ?parentType }}
-
-        # Labels for Child
-        OPTIONAL {{ ?child rdfs:label ?childLabel }}
-        OPTIONAL {{ ?child schema:name ?childLabel }}
-        OPTIONAL {{ ?child skos:prefLabel ?childLabel }}
-        OPTIONAL {{ ?child a ?childType }}
-    }}
-    LIMIT {limit}
-    """
-
+    query = build_hierarchy_query(child_property, root_node, target_class, limit)
     results = run_sparql(query)
 
-    # We map this result structure to the GraphResponse format manually
-    # because the query variable names (?parent, ?child) differ from the neighborhood (?s, ?o)
     nodes_map: Dict[str, GraphNode] = {}
     links: List[GraphLink] = []
 
+    # 2. Parse Results
     for row in results:
-        p_uri = row["parent"]["value"]
-        c_uri = row["child"]["value"]
+        p_uri = unpack_sparql_row(row, "parent")
+        c_uri = unpack_sparql_row(row, "child")
 
-        # Ensure Parent Node exists
+        if not p_uri or not c_uri:
+            continue
+
         if p_uri not in nodes_map:
             nodes_map[p_uri] = GraphNode(
                 id=p_uri,
-                label=_get_label(row.get("parentLabel"), p_uri),
-                group=_get_group(row.get("parentType"))
+                label=unpack_sparql_row(row, "parentLabel", p_uri.split("/")[-1]),
+                group=unpack_sparql_row(row, "parentType", "Node")
             )
-
-        # Ensure Child Node exists
         if c_uri not in nodes_map:
             nodes_map[c_uri] = GraphNode(
                 id=c_uri,
-                label=_get_label(row.get("childLabel"), c_uri),
-                group=_get_group(row.get("childType"))
+                label=unpack_sparql_row(row, "childLabel", c_uri.split("/")[-1]),
+                group=unpack_sparql_row(row, "childType", "Node")
             )
 
-        # Create Link (Parent -> Child)
-        # link_key = f"{p_uri}-{c_uri}"
-        # Simple check to avoid duplicates if SPARQL returns multiples
+        # Avoid duplicate links
+        link_key = (p_uri, c_uri)
         if not any(l.source == p_uri and l.target == c_uri for l in links):
             links.append(GraphLink(
                 source=p_uri,
@@ -139,40 +92,37 @@ def get_hierarchy_tree(
     )
 
 
-# --- Helpers ---
-
 def _transform_sparql_to_graph(results, center_node) -> GraphResponse:
     nodes_map: Dict[str, GraphNode] = {}
     links: List[GraphLink] = []
 
     for row in results:
-        s_uri = row["s"]["value"]
-        p_uri = row["p"]["value"]
-        o_uri = row["o"]["value"]
+        s_uri = unpack_sparql_row(row, "s")
+        p_uri = unpack_sparql_row(row, "p")
+        o_uri = unpack_sparql_row(row, "o")
+
+        if not s_uri or not o_uri:
+            continue
 
         if s_uri not in nodes_map:
             nodes_map[s_uri] = GraphNode(
                 id=s_uri,
-                label=_get_label(row.get("sLabel"), s_uri),
-                group=_get_group(row.get("sType"))
+                label=unpack_sparql_row(row, "sLabel", s_uri.split("/")[-1]),
+                group=unpack_sparql_row(row, "sType", "Unknown")
             )
 
         if o_uri not in nodes_map:
-            is_literal = (row["o"]["type"] == "literal")
+            is_literal = (row.get("o", {}).get("type") == "literal")
             nodes_map[o_uri] = GraphNode(
                 id=o_uri,
-                label=o_uri if is_literal else _get_label(row.get("oLabel"), o_uri),
-                group="Literal" if is_literal else _get_group(row.get("oType"))
+                label=o_uri if is_literal else unpack_sparql_row(row, "oLabel", o_uri.split("/")[-1]),
+                group="Literal" if is_literal else unpack_sparql_row(row, "oType", "Unknown")
             )
 
         rel_label = p_uri.split("#")[-1].split("/")[-1]
 
-        link_exists = any(
-            l.source == s_uri and l.target == o_uri and l.relationship == rel_label
-            for l in links
-        )
-
-        if not link_exists:
+        # Simple dedup logic
+        if not any(l.source == s_uri and l.target == o_uri and l.relationship == rel_label for l in links):
             links.append(GraphLink(
                 source=s_uri,
                 target=o_uri,
@@ -184,18 +134,3 @@ def _transform_sparql_to_graph(results, center_node) -> GraphResponse:
         nodes=list(nodes_map.values()),
         links=links
     )
-
-
-def _get_group(type_row):
-    if not type_row:
-        return "Unknown"
-    # Extract class name from URI (e.g., http://schema.org/Movie -> Movie)
-    return type_row["value"].split("#")[-1].split("/")[-1]
-
-
-def _get_label(val_row, uri):
-    if val_row:
-        return val_row["value"]
-    # Fallback to URI fragment
-    if "#" in uri: return uri.split("#")[-1]
-    return uri.split("/")[-1]

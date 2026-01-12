@@ -14,7 +14,7 @@ log = logging.getLogger("cpe-to-rdf")
 # NAMESPACES
 CPE_NS = Namespace("https://nvd.nist.gov/products/cpe/detail/")
 VENDOR_NS = Namespace("https://nvd.nist.gov/products/cpe/search/results?keyword=")
-DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
+DAVI_NIST = Namespace("https://purl.org/davi/vocab/nist#")
 SCHEMA = Namespace("http://schema.org/")
 
 
@@ -108,7 +108,7 @@ def map_cpe_to_rdf(data, part, g, cpe_map):
             break
 
 
-def process_cpe_json_folders(root_folder, output_dir, batch_size=5000):
+def process_cpe_json_folders(root_folder, output_dir, batch_size=30000):
     os.makedirs(output_dir, exist_ok=True)
     temp_dir = "_tmp_extract_cpe"
     os.makedirs(temp_dir, exist_ok=True)
@@ -178,6 +178,6 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=5000):
 
 if __name__ == "__main__":
     process_cpe_json_folders(
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CPE",
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_rdf_batches"
+        "CPE",
+        "nist/cpe_rdf_batches"
     )

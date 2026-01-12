@@ -6,30 +6,16 @@ from fastapi import HTTPException
 
 from app.core.sparql import run_sparql
 from app.models.schemas import FilterRequest, FilterOperator, FilterResultItem
+from app.utils.helpers import is_safe_uri
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-def _is_safe_uri(uri: str) -> bool:
-    """
-    Basic security check to prevent SPARQL injection via property paths.
-    Disallows spaces, semi-colons, and brackets which could break out of the query structure.
-    """
-    unsafe_chars = [" ", ";", "{", "}", "\\", '"', "'"]
-    if any(char in uri for char in unsafe_chars):
-        return False
-    return True
-
 
 def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
     """
     Formats Python values into SPARQL literals.
-    - True/False -> 'true'^^xsd:boolean
-    - Numbers -> 4.5
-    - URIs -> <http://...>
-    - Dates -> '2023-01-01'^^xsd:dateTime
-    - Strings -> 'text'
     """
     if isinstance(value, bool):
         return f"'{str(value).lower()}'^^xsd:boolean"
@@ -55,91 +41,108 @@ def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
 def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     select_vars = ["DISTINCT ?s", "?label", "?sType"]
 
-    # Ensure the dataset class is a safe URI
-    if not _is_safe_uri(request.dataset_class):
-        raise HTTPException(status_code=400, detail="Invalid Dataset Class URI")
+    # Map to track existing variables for (Property, Path) tuples to allow reuse
+    # Key: (property_uri) -> Value: variable_name (e.g., "?inter_0")
+    active_paths = {}
 
-    where_clauses = [f"?s a <{request.dataset_class}> ."]
+    if not is_safe_uri(request.target_class):
+        raise HTTPException(status_code=400, detail="Invalid Target Class URI")
+
+    where_clauses = [f"?s a <{request.target_class}> ."]
     filter_clauses = []
 
     for idx, f in enumerate(request.filters):
         var_name = f"?v{idx}"
 
-        # Security Check
+        # 1. Security & URI Parsing
         clean_prop_uri = f.property_uri.strip()
+
+        # Handle Inverse Properties (Start with ^)
         if clean_prop_uri.startswith("^"):
             check_uri = clean_prop_uri[1:]
+            prop = f"^<{check_uri}>"
         else:
             check_uri = clean_prop_uri
+            prop = f"<{check_uri}>"
 
-        if not _is_safe_uri(check_uri):
+        if not is_safe_uri(check_uri):
             raise HTTPException(status_code=400, detail=f"Invalid Property URI: {check_uri}")
-
-        # Handle Inverse Properties
-        if clean_prop_uri.startswith("^"):
-            prop = f"^<{clean_prop_uri[1:]}>"
-        else:
-            prop = f"<{clean_prop_uri}>"
 
         select_vars.append(var_name)
 
-        # Logic for Graph Traversal (e.g., Vuln -> Software -> Vendor)
-        if f.path_to_target:
-            if not _is_safe_uri(f.path_to_target):
-                raise HTTPException(status_code=400, detail="Invalid Path URI")
-
-            intermediate_var = f"?inter_{idx}"
-            where_clauses.append(f"?s {prop} {intermediate_var} .")
-            where_clauses.append(f"{intermediate_var} <{f.path_to_target}> {var_name} .")
-        else:
-            where_clauses.append(f"?s {prop} {var_name} .")
-
-        formatted_val = _format_value_for_sparql(f.value)
-        val_clean = str(f.value).replace('"', '\\"')
-
-        # --- Operator Logic ---
+        # 2. Logic Branch: Transitive vs. Standard
+        # We handle the graph pattern generation separately to avoid .pop()
 
         if f.operator == FilterOperator.TRANSITIVE:
-            # Semantic Hierarchical Search (e.g., find all child weaknesses)
-            # We pop the last added simple triple because we need a Property Path instead
-            where_clauses.pop()
-            if f.path_to_target: where_clauses.pop()
+            # --- TRANSITIVE LOGIC (Semantic Search) ---
+            # Finds children/descendants of the target value.
+            # It assumes the target value is a Concept (URI or Literal).
 
+            val_clean = str(f.value).replace('"', '\\"')
             target_node = f"<{val_clean}>" if "http" in str(f.value) else f"'{val_clean}'"
 
+            # We use property paths (*) to find descendants
             where_clauses.append(f"""
                 ?s {prop} ?concept .
                 ?concept (skos:broader*|rdfs:subClassOf*) {target_node} .
                 BIND({target_node} AS {var_name}) 
             """)
 
-        elif f.operator == FilterOperator.CONTAINS:
-            filter_clauses.append(f"FILTER(regex(str({var_name}), \"{val_clean}\", \"i\"))")
+        else:
+            # --- STANDARD LOGIC (Path or Direct) ---
 
-        elif f.operator == FilterOperator.NOT_CONTAINS:
-            filter_clauses.append(f"FILTER(!regex(str({var_name}), \"{val_clean}\", \"i\"))")
+            # A. Build the Graph Pattern
+            if f.path_to_target:
+                if not is_safe_uri(f.path_to_target):
+                    raise HTTPException(status_code=400, detail="Invalid Path URI")
 
-        elif f.operator == FilterOperator.EQUALS:
-            filter_clauses.append(f"FILTER({var_name} = {formatted_val})")
+                path_key = f.property_uri
 
-        elif f.operator == FilterOperator.NOT_EQUALS:
-            filter_clauses.append(f"FILTER({var_name} != {formatted_val})")
+                # Check for path reuse (optimization for multi-filtering the same node)
+                if path_key in active_paths:
+                    intermediate_var = active_paths[path_key]
+                else:
+                    intermediate_var = f"?inter_{idx}"
+                    active_paths[path_key] = intermediate_var
+                    where_clauses.append(f"?s {prop} {intermediate_var} .")
 
-        elif f.operator == FilterOperator.GT:
-            filter_clauses.append(f"FILTER({var_name} > {formatted_val})")
+                # The final hop to the value
+                where_clauses.append(f"{intermediate_var} <{f.path_to_target}> {var_name} .")
+            else:
+                # Direct property
+                where_clauses.append(f"?s {prop} {var_name} .")
 
-        elif f.operator == FilterOperator.LT:
-            filter_clauses.append(f"FILTER({var_name} < {formatted_val})")
+            # B. Build the Filter Clause
+            formatted_val = _format_value_for_sparql(f.value)
+            val_clean = str(f.value).replace('"', '\\"')
 
-    # Optional Metadata for UI
+            if f.operator == FilterOperator.CONTAINS:
+                filter_clauses.append(f"FILTER(regex(str({var_name}), \"{val_clean}\", \"i\"))")
+
+            elif f.operator == FilterOperator.NOT_CONTAINS:
+                filter_clauses.append(f"FILTER(!regex(str({var_name}), \"{val_clean}\", \"i\"))")
+
+            elif f.operator == FilterOperator.EQUALS:
+                filter_clauses.append(f"FILTER({var_name} = {formatted_val})")
+
+            elif f.operator == FilterOperator.NOT_EQUALS:
+                filter_clauses.append(f"FILTER({var_name} != {formatted_val})")
+
+            elif f.operator == FilterOperator.GT:
+                filter_clauses.append(f"FILTER({var_name} > {formatted_val})")
+
+            elif f.operator == FilterOperator.LT:
+                filter_clauses.append(f"FILTER({var_name} < {formatted_val})")
+
+    # 3. Add Optional Metadata (Labels)
     where_clauses.append("OPTIONAL { ?s rdfs:label ?label }")
     where_clauses.append("OPTIONAL { ?s schema:name ?label }")
+    where_clauses.append("OPTIONAL { ?s skos:prefLabel ?label }")
     where_clauses.append("OPTIONAL { ?s a ?sType }")
 
+    # 4. Assemble Final Query
     query_body = "\n".join(where_clauses + filter_clauses)
 
-    # Note: We rely on run_sparql to prepend the global PREFIXES from config.py
-    # This prevents namespace mismatch errors (e.g., davi-nist URLs).
     query = f"""
     SELECT {" ".join(select_vars)}
     WHERE {{
@@ -152,6 +155,7 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     logger.info(f"Generated SPARQL:\n{query}")
     results = run_sparql(query)
 
+    # 5. Transform Results
     items = []
     for r in results:
         uri = r["s"]["value"]
@@ -162,7 +166,7 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
             if v_key in r:
                 matches_data[request.filters[idx].property_uri] = r[v_key]["value"]
 
-        # Label fallback logic
+        # Robust Label Fallback
         if "label" in r:
             label = r["label"]["value"]
         elif "#" in uri:

@@ -1,25 +1,36 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import ForceGraph3D from 'react-force-graph-3d';
-import {useSidebarContext} from '../../context/sidebarContext';
-import {getGraphData} from '../../lib/graph';
-import {cn} from '../../lib/utils';
-import type {GraphEdge, GraphNode} from '../../types';
+import { useSidebarContext } from '../../context/sidebarContext';
+import { getGraphData } from '../../lib/graph';
+import { cn } from '../../lib/utils';
+import type { GraphEdge, GraphEmptyState, GraphNode } from '../../types';
 
 export default function CombinedGraphVis() {
-  const { baseDataset } = useSidebarContext();
+  const { baseDataset, currentView } = useSidebarContext();
   const [is3D, setIs3D] = useState<boolean>(false);
   const [graphData, setGraphData] = useState<{ nodes: GraphNode[]; links: GraphEdge[] }>({
     nodes: [],
     links: [],
   });
-  const startUri = baseDataset?.id === 'nist-nvd'
-    ? 'https://nvd.nist.gov/vuln/detail/CVE-1999-0199'
-    : 'https://www.imdb.com/title/tt0114709';
 
+  // Use the View's example resource, falling back to the Dataset's (if any)
+  const startUri = currentView?.example_resource ?? baseDataset?.example_resource ?? '';
+
+  // Determine State
+  const graphState: GraphEmptyState = !baseDataset
+    ? { kind: 'no-dataset' }
+    : startUri === ''
+      ? { kind: 'missing-start-uri' }
+      : { kind: 'ready', startUri };
+
+  // Load Initial Neighborhood
   useEffect(() => {
+    if (graphState.kind !== 'ready') return;
+
     async function loadGraph() {
-      const res = await getGraphData(startUri);
+      // Pass currentView.id so backend can highlight relevant nodes
+      const res = await getGraphData(startUri, currentView?.id);
 
       const nodes = res.nodes.map(n => ({
         id: n.id,
@@ -39,12 +50,13 @@ export default function CombinedGraphVis() {
     }
 
     void loadGraph();
-  }, [baseDataset, startUri]);
+  }, [baseDataset, currentView, graphState.kind, startUri]);
 
   const handleNodeClick = async (node: GraphNode) => {
     try {
       console.log('Expanding node:', node.id);
-      const res = await getGraphData(node.id);
+      // We pass the current view ID even during expansion to keep context
+      const res = await getGraphData(node.id, currentView?.id);
 
       setGraphData(prev => {
         const existingNodeIds = new Set(prev.nodes.map(n => n.id));
@@ -69,18 +81,44 @@ export default function CombinedGraphVis() {
     }
   };
 
+  const renderEmptyState = () => {
+    if (graphState.kind === 'ready') return null;
+
+    const message =
+      graphState.kind === 'no-dataset'
+        ? {
+          title: 'No dataset selected',
+          body: 'Please select a dataset to explore its graph.',
+        }
+        : {
+          title: 'Graph unavailable',
+          body: 'The selected view does not define a starting resource for graph exploration.',
+        };
+
+    return (
+      <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+        <div className="max-w-md text-center p-6 rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+          <h3 className="text-lg font-semibold text-amber-400 mb-2">
+            {message.title}
+          </h3>
+          <p className="text-sm text-slate-300">{message.body}</p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={cn(
       'rounded-2xl overflow-hidden border border-slate-700/50 h-96 bg-slate-900 relative',
       'shadow-2xl shadow-black/50'
     )}>
       {is3D && (
-      <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-700/50 p-3 rounded-xl text-xs text-slate-300 shadow-lg">
-        <p className="font-semibold text-emerald-400 mb-1">Controls</p>
-        <p>Left Click: Rotate</p>
-        <p>Right Click: Pan</p>
-        <p>Scroll: Zoom</p>
-      </div>
+        <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-700/50 p-3 rounded-xl text-xs text-slate-300 shadow-lg">
+          <p className="font-semibold text-emerald-400 mb-1">Controls</p>
+          <p>Left Click: Rotate</p>
+          <p>Right Click: Pan</p>
+          <p>Scroll: Zoom</p>
+        </div>
       )}
 
       <div className="absolute top-4 right-4 z-30 p-2">
@@ -93,29 +131,33 @@ export default function CombinedGraphVis() {
         </button>
       </div>
 
-      {is3D ? (
-        <ForceGraph3D
-          graphData={graphData}
-          nodeLabel="label"
-          nodeAutoColorBy="group"
-          backgroundColor="#020617"
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          nodeOpacity={0.9}
-          linkOpacity={0.3}
-          linkWidth={1}
-          onNodeClick={handleNodeClick}
-        />
-      ) : (
-        <ForceGraph2D
-          graphData={graphData}
-          nodeLabel="label"
-          nodeAutoColorBy="group"
-          onNodeClick={handleNodeClick}
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          backgroundColor="#0f172a"
-        />
+      {renderEmptyState()}
+
+      {graphState.kind === 'ready' && (
+        is3D ? (
+          <ForceGraph3D
+            graphData={graphData}
+            nodeLabel="label"
+            nodeAutoColorBy="group"
+            backgroundColor="#020617"
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            nodeOpacity={0.9}
+            linkOpacity={0.3}
+            linkWidth={1}
+            onNodeClick={handleNodeClick}
+          />
+        ) : (
+          <ForceGraph2D
+            graphData={graphData}
+            nodeLabel="label"
+            nodeAutoColorBy="group"
+            onNodeClick={handleNodeClick}
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            backgroundColor="#0f172a"
+          />
+        )
       )}
     </div>
   );
