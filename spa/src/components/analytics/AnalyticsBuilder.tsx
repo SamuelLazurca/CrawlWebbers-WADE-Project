@@ -13,7 +13,6 @@ export const AnalyticsBuilder: React.FC = () => {
   const [chartData, setChartData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Reset selections when the View changes
   useEffect(() => {
     setSelectedDim('');
     setSelectedMetric('');
@@ -64,7 +63,6 @@ export const AnalyticsBuilder: React.FC = () => {
     <div className='space-y-6'>
       <div className='grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-slate-900/50 rounded-2xl border border-slate-800 backdrop-blur-md'>
 
-        {/* DIMENSION SELECTOR */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
             <Layout size={14} /> Dimension (X-Axis)
@@ -81,7 +79,6 @@ export const AnalyticsBuilder: React.FC = () => {
           </select>
         </div>
 
-        {/* METRIC SELECTOR */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
             <Database size={14} /> Metric (Y-Axis)
@@ -98,7 +95,6 @@ export const AnalyticsBuilder: React.FC = () => {
           </select>
         </div>
 
-        {/* AGGREGATION SELECTOR */}
         <div className="space-y-2">
           <label className="text-xs font-bold text-slate-500 uppercase flex items-center gap-2">
             <Calculator size={14} /> Aggregation
@@ -131,7 +127,7 @@ export const AnalyticsBuilder: React.FC = () => {
             subtitle={`Grouped by ${currentView.dimensions.find(d => d.uri === selectedDim)?.label || 'Dimension'}`}
             data={chartData}
             type={agg === 'AVG' ? 'line' : 'bar'}
-            dataKey='count'
+            dataKey='value'
             xKey='label'
             height={400}
           />

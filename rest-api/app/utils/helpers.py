@@ -19,7 +19,6 @@ def unpack_sparql_row(row: Dict[str, Any], key: str, default: Any = None, cast_t
 
     try:
         if cast_to == bool:
-            # SPARQL booleans are "true"/"false" strings
             return val_str.lower() == "true"
         return cast_to(val_str)
     except (ValueError, TypeError):
@@ -34,6 +33,5 @@ def is_safe_uri(uri: str) -> bool:
     """
     if not uri:
         return False
-    # Added |^*+ to the allowed character set
     pattern = re.compile(r'^[a-zA-Z0-9_\-:/.#|^*+]+$')
     return bool(pattern.match(uri))

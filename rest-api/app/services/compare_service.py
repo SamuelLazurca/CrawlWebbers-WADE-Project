@@ -7,23 +7,17 @@ from app.utils.sparql_queries import build_comparison_query, build_view_config_q
 
 
 def compare_entities(uri_a: str, uri_b: str, view_id: Optional[str] = None) -> ComparisonResponse:
-    # 1. Fetch the raw comparison data (Generic)
     query = build_comparison_query(uri_a, uri_b)
     results = run_sparql(query)
 
-    # 2. (Optional) Fetch View-Specific Labels to override defaults
     view_labels_map = {}
     if view_id:
         view_labels_map = _get_view_label_overrides(view_id)
 
-    # 3. Organize data
-    # Structure: data_map[property_uri][value_str] = { 'A', 'B' }
     data_map = defaultdict(lambda: defaultdict(set))
 
-    # Metadata map to store the "Best Available Label" for each property
     prop_meta_map = {}
 
-    # Value metadata map
     val_meta_map = {}
 
     for row in results:
@@ -31,30 +25,21 @@ def compare_entities(uri_a: str, uri_b: str, view_id: Optional[str] = None) -> C
         p_uri = row["p"]["value"]
         o_val = row["o"]["value"]
 
-        # LABEL PRIORITY LOGIC:
-        # 1. View-Specific Override (from view_id)
-        # 2. SPARQL Label (rdfs:label, etc.)
-        # 3. URI Fragment
-
         if p_uri in view_labels_map:
             p_label = view_labels_map[p_uri]
         else:
             p_label = row.get("pLabel", {}).get("value", p_uri.split("#")[-1].split("/")[-1])
 
-        # Store the best label found for this property
         prop_meta_map[p_uri] = p_label
 
         o_label = row.get("oLabel", {}).get("value")
-        # Clean up the object label if it looks like a URI
         if not o_label and "http" in o_val:
             o_label = o_val.split("#")[-1].split("/")[-1]
 
-        # Store value metadata
         val_meta_map[(p_uri, o_val)] = o_label
 
         data_map[p_uri][o_val].add(source)
 
-    # 4. Compute Intersection and Differences
     common = []
     unique_a = []
     unique_b = []
@@ -79,7 +64,6 @@ def compare_entities(uri_a: str, uri_b: str, view_id: Optional[str] = None) -> C
             elif "B" in sources:
                 unique_b.append(item_obj)
 
-    # Sort by the final resolved labels
     common.sort(key=lambda x: x.property_label)
     unique_a.sort(key=lambda x: x.property_label)
     unique_b.sort(key=lambda x: x.property_label)
@@ -104,8 +88,6 @@ def _get_view_label_overrides(view_id: str) -> dict:
     label_map = {}
     for r in results:
         p_uri = r["prop"]["value"]
-        # The query returns 'propLabel' which is already coalesced
-        # (View Override > Global Label > URI)
         if "propLabel" in r:
             label_map[p_uri] = r["propLabel"]["value"]
 

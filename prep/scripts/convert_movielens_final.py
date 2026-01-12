@@ -9,8 +9,8 @@ import pandas as pd
 TOP_N_MOVIES = 1000
 MAX_RATINGS_PER_MOVIE = 1000
 GENOME_THRESHOLD = 0.5
-INPUT_DIR = "data"
-OUTPUT_DIR = "output_ttl_final"
+INPUT_DIR = "D:/Master/Anul2Sem1/WADE/Project/davi/data/ML_20M"
+OUTPUT_DIR = "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/movielens"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # NAMESPACES & PREFIXES
@@ -279,7 +279,7 @@ def process_tags_metadata():
 if __name__ == "__main__":
     setup_movie_mapping()
     process_movies()
-    # process_tags_metadata()
-    # process_genome()
-    # process_ratings()
+    process_tags_metadata()
+    process_genome()
+    process_ratings()
     print("\nConversion Complete! Output is in 'output_ttl_final/'")

@@ -2,7 +2,4 @@ fastapi
 uvicorn
 SPARQLWrapper
 pydantic
-strands-agents>=1.0.0
-strands-agents-tools>=0.2.0
-openai
 python-dotenv

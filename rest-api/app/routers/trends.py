@@ -21,7 +21,7 @@ def get_property_distribution(
     """
     try:
         data = get_distribution_query(target_property, view_id, granularity, limit)
-        total = sum(d.count for d in data)
+        total = sum(d.value for d in data)
 
         return TrendsResponse(
             property=target_property,
@@ -50,7 +50,7 @@ def get_custom_analytics(
         # Calculate total only if it makes sense (e.g., not for AVG)
         total = 0
         if data and aggregation in [AggregationType.COUNT, AggregationType.SUM]:
-            total = sum(d.count for d in data)
+            total = sum(d.value for d in data)
 
         return TrendsResponse(
             property=f"{aggregation.value}({metric or 'records'}) by {dimension}",

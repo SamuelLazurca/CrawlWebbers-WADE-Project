@@ -29,18 +29,17 @@ def get_distribution_query(
     if not is_safe_uri(target_property):
         raise HTTPException(status_code=400, detail="Invalid Property URI")
 
-    # 1. Resolve Scope
     target_class = _get_target_class(view_id)
 
-    # 2. Build Query with Scope
     query = build_distribution_query(target_property, target_class, granularity, limit)
+
     results = run_sparql(query)
 
     trend_data = []
     for row in results:
         label = unpack_sparql_row(row, "groupKey")
         count_val = unpack_sparql_row(row, "count", 0, int)
-        trend_data.append(TrendPoint(label=label, count=count_val))
+        trend_data.append(TrendPoint(label=label, value=count_val))
 
     return trend_data
 
@@ -55,10 +54,8 @@ def get_custom_analytics_query(
     if not is_safe_uri(dimension):
         raise HTTPException(status_code=400, detail="Invalid Dimension URI")
 
-    # 1. Resolve Scope
     target_class = _get_target_class(view_id)
 
-    # 2. Build Query with Scope
     query = build_custom_analytics_query(dimension, metric, target_class, aggregation, limit)
 
     try:
@@ -66,12 +63,11 @@ def get_custom_analytics_query(
         data = []
         for row in results:
             label = unpack_sparql_row(row, "groupKey")
-            # Clean up URIs in labels for better UI
             if label and "http" in label and "/" in label:
                 label = label.split("/")[-1].split("#")[-1]
 
             val = unpack_sparql_row(row, "val", 0, float)
-            data.append(TrendPoint(label=label, count=val))
+            data.append(TrendPoint(label=label, value=val))
         return data
 
     except Exception as e:
