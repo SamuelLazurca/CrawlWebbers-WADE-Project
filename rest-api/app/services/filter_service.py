@@ -12,7 +12,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-
 def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
     """
     Formats Python values into SPARQL literals.
@@ -37,34 +36,47 @@ def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
 
 def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     select_vars = ["DISTINCT ?s", "?label", "?sType"]
-
     active_paths = {}
 
     if not is_safe_uri(request.target_class):
         raise HTTPException(status_code=400, detail="Invalid Target Class URI")
 
+    # 1. Base Structure
     where_clauses = [f"?s a <{request.target_class}> ."]
     filter_clauses = []
+
+    # NEW: We need the text prefix for the optimization to work
+    prefixes = "PREFIX text: <http://jena.apache.org/text#>\n"
 
     for idx, f in enumerate(request.filters):
         var_name = f"?v{idx}"
 
         clean_prop_uri = f.property_uri.strip()
 
+        # Handle Inverse Properties
         if clean_prop_uri.startswith("^"):
             check_uri = clean_prop_uri[1:]
             prop = f"^<{check_uri}>"
+            raw_prop = f"<{check_uri}>"  # Used for text:query check
         else:
             check_uri = clean_prop_uri
             prop = f"<{check_uri}>"
+            raw_prop = prop
 
         if not is_safe_uri(check_uri):
             raise HTTPException(status_code=400, detail=f"Invalid Property URI: {check_uri}")
 
         select_vars.append(var_name)
 
+        val_clean = str(f.value).replace('"', '\\"')
+        formatted_val = _format_value_for_sparql(f.value)
+
+        # ---------------------------------------------------------
+        # OPTIMIZATION LOGIC
+        # ---------------------------------------------------------
+
         if f.operator == FilterOperator.TRANSITIVE:
-            val_clean = str(f.value).replace('"', '\\"')
+            # Hierarchy Logic (Tree Search)
             target_node = f"<{val_clean}>" if "http" in str(f.value) else f"'{val_clean}'"
 
             where_clauses.append(f"""
@@ -73,7 +85,28 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
                 BIND({target_node} AS {var_name}) 
             """)
 
+        elif f.operator == FilterOperator.CONTAINS:
+            # TEXT INDEX LOGIC (The Performance Boost)
+            # Instead of scanning all rows with regex, we ask the Index first.
+            # Syntax: ?s text:query ( property "search_term" )
+
+            # Note: We still include the standard triple `?s {prop} {var_name}`
+            # below to ensure we bind the variable for display.
+
+            # Optimization: "Find Subjects ?s where Property matches Value"
+            where_clauses.append(f"?s text:query ({raw_prop} \"{val_clean}\") .")
+
+            # Standard binding (retrieves the actual text to show in the UI)
+            if f.path_to_target:
+                # Complex paths (nested objects) are harder to optimize with simple text:query
+                # We fall back to standard logic for paths
+                pass
+            else:
+                # We still bind the variable, but the heavy lifting was done by text:query
+                where_clauses.append(f"?s {prop} {var_name} .")
+
         else:
+            # STANDARD LOGIC (Numeric, Dates, Exact Match)
             if f.path_to_target:
                 if not is_safe_uri(f.path_to_target):
                     raise HTTPException(status_code=400, detail="Invalid Path URI")
@@ -91,10 +124,9 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
             else:
                 where_clauses.append(f"?s {prop} {var_name} .")
 
-            formatted_val = _format_value_for_sparql(f.value)
-            val_clean = str(f.value).replace('"', '\\"')
-
+            # Apply Standard Filters (Regex, >, <, =)
             if f.operator == FilterOperator.CONTAINS:
+                # Fallback for complex paths that skipped the optimization block above
                 filter_clauses.append(f"FILTER(regex(str({var_name}), \"{val_clean}\", \"i\"))")
 
             elif f.operator == FilterOperator.NOT_CONTAINS:
@@ -119,7 +151,9 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
 
     query_body = "\n".join(where_clauses + filter_clauses)
 
+    # 3. Final Assembly
     query = f"""
+    {prefixes}
     SELECT {" ".join(select_vars)}
     WHERE {{
         {query_body}

@@ -39,6 +39,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useSidebarContext = (): SidebarContextValue => {
   const ctx = useContext(SidebarContext);
   if (!ctx) {

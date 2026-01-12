@@ -21,6 +21,7 @@ export const DatasetSelector: React.FC = () => {
       }
     }
     void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
   if (!baseDataset && datasets.length === 0) {
