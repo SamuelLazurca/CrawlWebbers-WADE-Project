@@ -19,9 +19,7 @@ interface Props {
 }
 
 export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
-  // Draft filters (UI state)
   const [filters, setFilters] = useState<FilterItem[]>([]);
-  // Active filters (Query state) - Used for the useEffect dependency
   const [activeFilters, setActiveFilters] = useState<FilterItem[]>([]);
 
   const [intelligentMode, setIntelligentMode] = useState(false);
@@ -34,7 +32,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const [offset, setOffset] = useState(0);
   const { currentView } = useSidebarContext();
 
-  // Reset when view changes
   useEffect(() => {
     setFilters([]);
     setActiveFilters([]);
@@ -52,9 +49,8 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
 
   const removeFilter = (i: number) => setFilters(prev => prev.filter((_, idx) => idx !== i));
 
-  // Wrapped in useCallback to satisfy linter if used in effects (though we use activeFilters now)
   const executeQuery = useCallback(async (queryFilters: FilterItem[], queryOffset: number) => {
-    if (queryFilters.length === 0) return;
+    // if (queryFilters.length === 0) return;
 
     setError(null);
     setLoading(true);
@@ -82,10 +78,8 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   }, [datasetClass, limit]);
 
   const handleRunClick = () => {
-    setOffset(0); // Reset pagination on new run
-    setActiveFilters(filters); // Commit draft to active
-    // We don't need to call executeQuery here because the useEffect below will trigger
-    // when activeFilters changes.
+    setOffset(0); 
+    setActiveFilters(filters);
   };
 
   const askAgent = async () => {
@@ -113,11 +107,8 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const nextPage = () => { setOffset(prev => prev + limit); };
   const prevPage = () => { setOffset(prev => Math.max(0, prev - limit)); };
 
-  // Effect: Runs when Active Filters OR Pagination changes
   useEffect(() => {
-    if (activeFilters.length > 0) {
-      void executeQuery(activeFilters, offset);
-    }
+    void executeQuery(activeFilters, offset);
   }, [activeFilters, offset, executeQuery]);
 
   return (
@@ -129,17 +120,7 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
         </h2>
 
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={intelligentMode}
-              onChange={(e) => setIntelligentMode(e.target.checked)}
-              className="accent-emerald-500"
-            />
-            <span className={intelligentMode ? "text-emerald-400 font-medium" : "text-slate-400"}>
-                AI Agent
-            </span>
-          </label>
+          
           <button
             onClick={handleRunClick}
             disabled={loading}
@@ -207,17 +188,21 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
               />
 
               <input
-                className="col-span-11 md:col-span-2 bg-slate-900 p-2 rounded border border-slate-700 text-sm text-slate-200"
-                placeholder="Path (Optional)"
-                value={f.path_to_target ?? ''}
-                onChange={e => updateFilter(idx, { path_to_target: e.target.value })}
-              />
+  className="col-span-12 md:col-span-2 bg-slate-900 p-2 rounded border border-slate-700 text-sm text-slate-200"
+  placeholder="Path (Optional)"
+  value={f.path_to_target ?? ''}
+  onChange={e => updateFilter(idx, { path_to_target: e.target.value })}
+/>
 
-              <div className="col-span-1 flex justify-end">
-                <button onClick={() => removeFilter(idx)} className="p-2 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors">
-                  <X size={16} />
-                </button>
-              </div>
+<div className="col-span-12 md:col-span-1 flex justify-end">
+  <button
+    onClick={() => removeFilter(idx)}
+    className="p-2 rounded bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors"
+  >
+    <X size={16} />
+  </button>
+</div>
+
             </div>
           ))}
 

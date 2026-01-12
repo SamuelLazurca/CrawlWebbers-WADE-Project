@@ -1,9 +1,6 @@
-// Common Result type for API responses
 export type Result<T> =
   | { success: true; data: T; error: null }
   | { success: false; data: null; error: string };
-
-// --- DATASET & CONFIGURATION TYPES ---
 
 export interface AnalyzableProperty {
   uri: string;
@@ -62,8 +59,6 @@ export interface ItemsResponse<T> {
   items: T[];
 }
 
-// --- VISUALIZATION DATA TYPES ---
-
 export interface Concept {
   uri: string;
   label: string;
@@ -81,7 +76,7 @@ export interface FilterFacet {
 
 export interface TrendPoint {
   label: string;
-  count: number;
+  value: number;
 }
 
 export interface TrendData {
@@ -113,14 +108,12 @@ export interface NeighborhoodResponse {
   links: GraphEdge[];
 }
 
-// --- FILTERING TYPES ---
-
 export const FilterOperator = {
   TRANSITIVE: 'TRANSITIVE',
   CONTAINS: 'CONTAINS',
   NOT_CONTAINS: 'NOT_CONTAINS',
-  EQUALS: 'EQUALS',
-  NOT_EQUALS: 'NOT_EQUALS',
+  EQUALS: 'EQ',
+  NOT_EQUALS: 'NEQ',
   GT: 'GT',
   LT: 'LT',
 } as const;

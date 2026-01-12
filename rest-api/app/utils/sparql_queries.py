@@ -3,7 +3,6 @@ from typing import Optional
 from app.models.schemas import GranularityEnum, AggregationType
 
 
-# 1. FETCH DATASETS (Lightweight)
 def build_all_datasets_query() -> str:
     return """
     SELECT ?ds ?id ?name ?desc ?url ?date ?sizeBytes ?numFiles ?numDownloads ?uploadedBy ?uploadedByUrl
@@ -29,7 +28,6 @@ def build_all_datasets_query() -> str:
 
 
 def build_single_dataset_query(dataset_id: str) -> str:
-    # Reuses the structure of all_datasets but filters by ID
     return f"""
     SELECT ?ds ?id ?name ?desc ?url ?date ?sizeBytes ?numFiles ?numDownloads ?uploadedBy ?uploadedByUrl
     WHERE {{
@@ -54,7 +52,6 @@ def build_single_dataset_query(dataset_id: str) -> str:
     """
 
 
-# 2. FETCH VIEWS FOR A DATASET
 def build_dataset_views_query(dataset_uri: str) -> str:
     """
     Finds all DataViews linked to the dataset via davi-meta:hasView
@@ -75,7 +72,6 @@ def build_dataset_views_query(dataset_uri: str) -> str:
     """
 
 
-# 3. FETCH CONFIGURATION FOR A SPECIFIC VIEW
 def build_view_config_query(view_uri: str) -> str:
     """
     Fetches Dimensions and Metrics for a specific View.
@@ -209,19 +205,15 @@ def build_neighborhood_query(resource_uri: str, target_class: Optional[str], lim
 
 def build_hierarchy_query(child_property: str, root_node: Optional[str], target_class: Optional[str],
                           limit: int = 100) -> str:
-    # 1. Scope Clause
     class_filter = f"?parent a <{target_class}> . ?child a <{target_class}> ." if target_class else ""
 
     if root_node:
-        # User requested specific branch
         where_logic = f"""
             BIND(<{root_node}> AS ?parent)
             ?parent <{child_property}> ?child .
             {class_filter}
         """
     else:
-        # Find Roots (Nodes that are Parents but have no Parents themselves in this scope)
-        # Note: This finds the "Top" of the tree.
         where_logic = f"""
             ?parent <{child_property}> ?child .
             {class_filter}
@@ -291,7 +283,6 @@ def build_custom_analytics_query(
 ) -> str:
     class_filter = f"?s a <{target_class}> ." if target_class else ""
 
-    # 1. Handle DIMENSION Path logic
     if (dimension.startswith("http://") or dimension.startswith("https://")) and "/http" not in dimension:
         dim_pred = f"<{dimension}>"
     else:
@@ -301,14 +292,12 @@ def build_custom_analytics_query(
         selection = "(COUNT(DISTINCT ?s) as ?val)"
         metric_pattern = ""
     else:
-        # 2. Handle METRIC Path logic (COPY OF DIMENSION LOGIC)
         if (metric.startswith("http://") or metric.startswith("https://")) and "/http" not in metric:
             met_pred = f"<{metric}>"
         else:
             met_pred = metric
 
         selection = f"({aggregation.value}(xsd:decimal(?metricRaw)) as ?val)"
-        # Use met_pred instead of <{metric}>
         metric_pattern = f"?s {met_pred} ?metricRaw ."
 
     return f"""

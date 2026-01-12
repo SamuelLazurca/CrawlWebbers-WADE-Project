@@ -14,14 +14,12 @@ from app.utils.sparql_queries import (
 
 
 def datasets_get_all_query() -> list[DatasetSchema]:
-    # 1. Fetch Core Datasets
     results = run_sparql(build_all_datasets_query())
     datasets = []
 
     for row in results:
         ds_uri = unpack_sparql_row(row, "ds")
 
-        # 2. Fetch Views for this Dataset
         views = _get_views_for_dataset(ds_uri)
 
         datasets.append(DatasetSchema(
@@ -73,9 +71,7 @@ def _get_views_for_dataset(dataset_uri: str) -> list[DataViewSchema]:
     for r in rows:
         view_uri = unpack_sparql_row(r, "view")
 
-        # 3. Fetch Config
         dims, metrics = _get_view_analytics_config(view_uri)
-        # 4. Fetch Visualizations
         viz_modules = _get_view_visualizations(view_uri)
 
         views.append(DataViewSchema(

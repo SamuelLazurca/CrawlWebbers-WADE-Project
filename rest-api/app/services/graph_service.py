@@ -26,9 +26,6 @@ def get_node_neighborhood(resource_uri: str, view_id: Optional[str], limit: int 
     if not is_safe_uri(resource_uri):
         raise HTTPException(status_code=400, detail="Invalid Resource URI")
 
-    # 1. (Optional) We could use target_class to filter,
-    # but for neighborhood exploration, it's often better to see "everything connected".
-    # We pass it just in case we want to prioritize nodes of the same type.
     target_class = _get_target_class(view_id)
 
     query = build_neighborhood_query(resource_uri, target_class, limit)
@@ -46,7 +43,6 @@ def get_hierarchy_tree(
     if not is_safe_uri(child_property):
         raise HTTPException(status_code=400, detail="Invalid Property URI")
 
-    # 1. Resolve Scope (Critical for Layered Visualization)
     target_class = _get_target_class(view_id)
 
     query = build_hierarchy_query(child_property, root_node, target_class, limit)
@@ -55,7 +51,6 @@ def get_hierarchy_tree(
     nodes_map: Dict[str, GraphNode] = {}
     links: List[GraphLink] = []
 
-    # 2. Parse Results
     for row in results:
         p_uri = unpack_sparql_row(row, "parent")
         c_uri = unpack_sparql_row(row, "child")
@@ -76,7 +71,6 @@ def get_hierarchy_tree(
                 group=unpack_sparql_row(row, "childType", "Node")
             )
 
-        # Avoid duplicate links
         link_key = (p_uri, c_uri)
         if not any(l.source == p_uri and l.target == c_uri for l in links):
             links.append(GraphLink(
@@ -121,7 +115,6 @@ def _transform_sparql_to_graph(results, center_node) -> GraphResponse:
 
         rel_label = p_uri.split("#")[-1].split("/")[-1]
 
-        # Simple dedup logic
         if not any(l.source == s_uri and l.target == o_uri and l.relationship == rel_label for l in links):
             links.append(GraphLink(
                 source=s_uri,

@@ -14,21 +14,18 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
   const [data, setData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Heuristic to decide chart type
   const isDateProperty =
     option.target_property.toLowerCase().includes('date') ||
     option.label.toLowerCase().includes('timeline');
 
   useEffect(() => {
     const loadData = async () => {
-      // If no view is selected, we can't fetch view-specific data
       if (!currentView) return;
 
       setLoading(true);
       try {
         const currentGran = isDateProperty ? 'year' : 'none';
 
-        // PASS currentView.id to the API
         const result = await getTrendData(
           option.target_property,
           currentView.id,
@@ -59,7 +56,7 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
         subtitle={currentView ? `${currentView.label} Analysis` : 'Loading...'}
         type={isDateProperty ? 'line' : 'bar'}
         data={data}
-        dataKey='count'
+        dataKey='value'
         xKey='label'
         height={300}
       />

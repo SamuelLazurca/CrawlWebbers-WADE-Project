@@ -25,15 +25,12 @@ def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
 
     val_str = str(value)
 
-    # If it looks like a full URI, wrap it in angle brackets
     if val_str.startswith("http://") or val_str.startswith("https://"):
         return f"<{val_str}>"
 
-    # ISO Date detection (Simple YYYY-MM-DD check)
     if re.match(r"^\d{4}-\d{2}-\d{2}", val_str):
         return f"'{val_str}'^^xsd:dateTime"
 
-    # Default to string literal, escaping quotes
     clean_val = val_str.replace("'", "\\'")
     return f"'{clean_val}'"
 
@@ -41,8 +38,6 @@ def _format_value_for_sparql(value: Union[str, int, float, bool]) -> str:
 def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     select_vars = ["DISTINCT ?s", "?label", "?sType"]
 
-    # Map to track existing variables for (Property, Path) tuples to allow reuse
-    # Key: (property_uri) -> Value: variable_name (e.g., "?inter_0")
     active_paths = {}
 
     if not is_safe_uri(request.target_class):
@@ -54,10 +49,8 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     for idx, f in enumerate(request.filters):
         var_name = f"?v{idx}"
 
-        # 1. Security & URI Parsing
         clean_prop_uri = f.property_uri.strip()
 
-        # Handle Inverse Properties (Start with ^)
         if clean_prop_uri.startswith("^"):
             check_uri = clean_prop_uri[1:]
             prop = f"^<{check_uri}>"
@@ -70,18 +63,10 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
 
         select_vars.append(var_name)
 
-        # 2. Logic Branch: Transitive vs. Standard
-        # We handle the graph pattern generation separately to avoid .pop()
-
         if f.operator == FilterOperator.TRANSITIVE:
-            # --- TRANSITIVE LOGIC (Semantic Search) ---
-            # Finds children/descendants of the target value.
-            # It assumes the target value is a Concept (URI or Literal).
-
             val_clean = str(f.value).replace('"', '\\"')
             target_node = f"<{val_clean}>" if "http" in str(f.value) else f"'{val_clean}'"
 
-            # We use property paths (*) to find descendants
             where_clauses.append(f"""
                 ?s {prop} ?concept .
                 ?concept (skos:broader*|rdfs:subClassOf*) {target_node} .
@@ -89,16 +74,12 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
             """)
 
         else:
-            # --- STANDARD LOGIC (Path or Direct) ---
-
-            # A. Build the Graph Pattern
             if f.path_to_target:
                 if not is_safe_uri(f.path_to_target):
                     raise HTTPException(status_code=400, detail="Invalid Path URI")
 
                 path_key = f.property_uri
 
-                # Check for path reuse (optimization for multi-filtering the same node)
                 if path_key in active_paths:
                     intermediate_var = active_paths[path_key]
                 else:
@@ -106,13 +87,10 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
                     active_paths[path_key] = intermediate_var
                     where_clauses.append(f"?s {prop} {intermediate_var} .")
 
-                # The final hop to the value
                 where_clauses.append(f"{intermediate_var} <{f.path_to_target}> {var_name} .")
             else:
-                # Direct property
                 where_clauses.append(f"?s {prop} {var_name} .")
 
-            # B. Build the Filter Clause
             formatted_val = _format_value_for_sparql(f.value)
             val_clean = str(f.value).replace('"', '\\"')
 
@@ -134,13 +112,11 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
             elif f.operator == FilterOperator.LT:
                 filter_clauses.append(f"FILTER({var_name} < {formatted_val})")
 
-    # 3. Add Optional Metadata (Labels)
     where_clauses.append("OPTIONAL { ?s rdfs:label ?label }")
     where_clauses.append("OPTIONAL { ?s schema:name ?label }")
     where_clauses.append("OPTIONAL { ?s skos:prefLabel ?label }")
     where_clauses.append("OPTIONAL { ?s a ?sType }")
 
-    # 4. Assemble Final Query
     query_body = "\n".join(where_clauses + filter_clauses)
 
     query = f"""
@@ -155,7 +131,6 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
     logger.info(f"Generated SPARQL:\n{query}")
     results = run_sparql(query)
 
-    # 5. Transform Results
     items = []
     for r in results:
         uri = r["s"]["value"]
@@ -166,7 +141,6 @@ def build_intelligent_query(request: FilterRequest) -> List[FilterResultItem]:
             if v_key in r:
                 matches_data[request.filters[idx].property_uri] = r[v_key]["value"]
 
-        # Robust Label Fallback
         if "label" in r:
             label = r["label"]["value"]
         elif "#" in uri:

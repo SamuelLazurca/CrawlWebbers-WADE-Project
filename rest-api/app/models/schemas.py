@@ -93,7 +93,7 @@ class AggregationType(str, Enum):
 
 class TrendPoint(BaseModel):
     label: Union[str, float, int]
-    count: Optional[float] = 0
+    value: Optional[float] = 0
 
     class Config:
         from_attributes = True
@@ -131,10 +131,10 @@ class GraphResponse(BaseModel):
 # --- INTELLIGENT FILTERING MODELS ---
 
 class FilterOperator(str, Enum):
-    EQUALS = "="
-    NOT_EQUALS = "!="
-    GT = ">"
-    LT = "<"
+    EQUALS = "EQ"
+    NOT_EQUALS = "NEQ"
+    GT = "GT"
+    LT = "LT"
     CONTAINS = "CONTAINS"
     NOT_CONTAINS = "NOT_CONTAINS"
     TRANSITIVE = "TRANSITIVE"
@@ -152,7 +152,6 @@ class FilterRequest(BaseModel):
     filters: List[FilterCondition]
     limit: int = 50
     offset: int = 0
-
 
 class FilterResultItem(BaseModel):
     uri: str
@@ -172,37 +171,3 @@ class ComparisonResponse(BaseModel):
     common_properties: List[ComparisonItem] = []
     unique_to_a: List[ComparisonItem] = []
     unique_to_b: List[ComparisonItem] = []
-
-class AgentFilterItem(BaseModel):
-    property_uri: str
-    operator: str
-    value: Any
-    path_to_target: Optional[str] = None
-
-    @validator("operator")
-    def operator_must_be_allowed(cls, v):
-        allowed = {"TRANSITIVE","CONTAINS","NOT_CONTAINS","EQUALS","NOT_EQUALS","GT","LT"}
-        if v not in allowed:
-            raise ValueError(f"Operator not allowed: {v}")
-        return v
-
-class AgentRequest(BaseModel):
-    text: str = Field(..., description="Natural language description for filtering (e.g. 'Find vulns mentioning log4j by vendor X')")
-    dataset_class: Optional[str] = Field(None, description="Optional dataset class URI to scope the query")
-    limit: Optional[int] = 25
-    offset: Optional[int] = 0
-
-class AgentResponse(BaseModel):
-    suggestions: List[AgentFilterItem]
-
-class FilterRequest(BaseModel):
-    dataset_class: str
-    filters: list
-    limit: int = 25
-    offset: int = 0
-
-class FilterResultItem(BaseModel):
-    uri: str
-    label: str
-    type: str
-    matches: dict
