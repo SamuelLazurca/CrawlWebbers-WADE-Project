@@ -1,30 +1,36 @@
-import {useEffect, useState} from 'react';
+import { useEffect, useState } from 'react';
 import ForceGraph2D from 'react-force-graph-2d';
 import ForceGraph3D from 'react-force-graph-3d';
-import {useSidebarContext} from '../../context/sidebarContext';
-import {getGraphData} from '../../lib/graph';
-import {cn} from '../../lib/utils';
-import type {GraphEdge, GraphEmptyState, GraphNode} from '../../types';
+import { useSidebarContext } from '../../context/sidebarContext';
+import { getGraphData } from '../../lib/graph';
+import { cn } from '../../lib/utils';
+import type { GraphEdge, GraphEmptyState, GraphNode } from '../../types';
 
 export default function CombinedGraphVis() {
-  const { baseDataset } = useSidebarContext();
+  const { baseDataset, currentView } = useSidebarContext();
   const [is3D, setIs3D] = useState<boolean>(false);
   const [graphData, setGraphData] = useState<{ nodes: GraphNode[]; links: GraphEdge[] }>({
     nodes: [],
     links: [],
   });
-  const startUri = baseDataset?.example_resource ?? '';
 
+  // Use the View's example resource, falling back to the Dataset's (if any)
+  const startUri = currentView?.example_resource ?? baseDataset?.example_resource ?? '';
+
+  // Determine State
   const graphState: GraphEmptyState = !baseDataset
     ? { kind: 'no-dataset' }
     : startUri === ''
       ? { kind: 'missing-start-uri' }
       : { kind: 'ready', startUri };
 
+  // Load Initial Neighborhood
   useEffect(() => {
     if (graphState.kind !== 'ready') return;
+
     async function loadGraph() {
-      const res = await getGraphData(startUri);
+      // Pass currentView.id so backend can highlight relevant nodes
+      const res = await getGraphData(startUri, currentView?.id);
 
       const nodes = res.nodes.map(n => ({
         id: n.id,
@@ -44,12 +50,13 @@ export default function CombinedGraphVis() {
     }
 
     void loadGraph();
-  }, [baseDataset, graphState.kind, startUri]);
+  }, [baseDataset, currentView, graphState.kind, startUri]);
 
   const handleNodeClick = async (node: GraphNode) => {
     try {
       console.log('Expanding node:', node.id);
-      const res = await getGraphData(node.id);
+      // We pass the current view ID even during expansion to keep context
+      const res = await getGraphData(node.id, currentView?.id);
 
       setGraphData(prev => {
         const existingNodeIds = new Set(prev.nodes.map(n => n.id));
@@ -85,8 +92,7 @@ export default function CombinedGraphVis() {
         }
         : {
           title: 'Graph unavailable',
-          body:
-            'The selected dataset does not define a starting resource for graph exploration.',
+          body: 'The selected view does not define a starting resource for graph exploration.',
         };
 
     return (
@@ -107,12 +113,12 @@ export default function CombinedGraphVis() {
       'shadow-2xl shadow-black/50'
     )}>
       {is3D && (
-      <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-700/50 p-3 rounded-xl text-xs text-slate-300 shadow-lg">
-        <p className="font-semibold text-emerald-400 mb-1">Controls</p>
-        <p>Left Click: Rotate</p>
-        <p>Right Click: Pan</p>
-        <p>Scroll: Zoom</p>
-      </div>
+        <div className="absolute top-4 left-4 z-20 bg-slate-900/90 backdrop-blur border border-slate-700/50 p-3 rounded-xl text-xs text-slate-300 shadow-lg">
+          <p className="font-semibold text-emerald-400 mb-1">Controls</p>
+          <p>Left Click: Rotate</p>
+          <p>Right Click: Pan</p>
+          <p>Scroll: Zoom</p>
+        </div>
       )}
 
       <div className="absolute top-4 right-4 z-30 p-2">

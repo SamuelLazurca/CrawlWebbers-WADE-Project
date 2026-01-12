@@ -3,9 +3,12 @@ import type {TrendData} from '../types';
 
 export const getTrendData = async (
   propertyUri: string,
+  viewId?: string,
   granularity: string = 'year'
 ): Promise<TrendData> => {
-  const url = `/trends/distribution?target_property=${encodeURIComponent(propertyUri)}&granularity=${granularity}&limit=10`;
+  const viewParam = viewId ? `&view_id=${encodeURIComponent(viewId)}` : '';
+  const url = `/trends/distribution?target_property=${encodeURIComponent(propertyUri)}${viewParam}&granularity=${granularity}&limit=10`;
+
   const response = await safeFetch<TrendData>(url);
 
   if (response.success && response.data) {

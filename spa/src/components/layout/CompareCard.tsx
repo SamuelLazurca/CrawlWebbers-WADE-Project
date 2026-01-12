@@ -35,7 +35,7 @@ export const CompareCard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white">Compare datasets</h2>
+      <h2 className="text-xl font-bold text-white">Compare Datasets</h2>
 
       <div className="flex items-center gap-3">
         <label className="text-sm text-slate-300">Compare with:</label>
@@ -61,9 +61,9 @@ export const CompareCard: React.FC = () => {
           {selectedDatasets.map((d) => (
             <div
               key={d.id}
-              className="px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-sm flex items-center gap-2"
+              className="px-3 py-1 rounded-full bg-slate-800/50 border border-slate-700 text-sm flex items-center gap-2 animate-in fade-in zoom-in-95"
             >
-              <span className='line-clamp-1' >{d.name}</span>
+              <span className='line-clamp-1 max-w-37.5'>{d.name}</span>
               <button
                 onClick={() => setSelectedIds((prev) => prev.filter((id) => id !== d.id))}
                 className="text-xs text-slate-400 hover:text-rose-400 ml-2"
@@ -93,11 +93,14 @@ const ComparisonColumn: React.FC<{
   dataset: Dataset;
   highlightDifferencesWith?: Dataset[];
 }> = ({ title, dataset, highlightDifferencesWith = [] }) => {
+
+  // Helper to check for diffs on primitive properties only
   const isDifferent = (key: keyof Dataset) => {
     return highlightDifferencesWith.some((other) => {
       const valA = dataset[key];
       const valB = other[key];
-      // Simple equality check is usually sufficient for primitives
+      // Skip comparison for arrays/objects like 'views'
+      if (typeof valA === 'object' || typeof valB === 'object') return false;
       return valA !== valB;
     });
   };
@@ -105,10 +108,10 @@ const ComparisonColumn: React.FC<{
   return (
     <div className="rounded-2xl p-4 bg-linear-to-br from-slate-800/40 to-slate-900/20 border border-slate-700/50 backdrop-blur-sm">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="font-semibold text-white">{title}</h3>
+        <h3 className="font-semibold text-white truncate max-w-50">{title}</h3>
         {dataset.url && (
-          <a href={dataset.url} target="_blank" rel="noopener noreferrer" className="text-sm text-slate-400 hover:underline">
-            {dataset.name || 'View Dataset'}
+          <a href={dataset.url} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:underline">
+            Source
           </a>
         )}
       </div>
@@ -118,6 +121,7 @@ const ComparisonColumn: React.FC<{
         <MetaRow label="Downloads" value={dataset.number_of_downloads ?? 0} highlight={isDifferent('number_of_downloads')} />
         <MetaRow label="Size" value={formatSize(dataset.size_in_bytes)} highlight={isDifferent('size_in_bytes')} />
         <MetaRow label="Added" value={formatDate(dataset.added_date)} highlight={isDifferent('added_date')} />
+        <MetaRow label="Views" value={dataset.views.length} highlight={false} />
 
         <MetaRow
           label="Uploaded by"
@@ -136,12 +140,10 @@ const ComparisonColumn: React.FC<{
 };
 
 const MetaRow: React.FC<{ label: string; value: React.ReactNode; highlight?: boolean }> = ({ label, value, highlight }) => (
-  <div className="flex items-center justify-between">
-    <div className="w-full">
-      <div className="text-xs text-slate-400">{label}</div>
-      <div className={cn('font-semibold truncate', highlight ? 'text-rose-300' : 'text-slate-200')}>
-        {value}
-      </div>
+  <div className="flex items-center justify-between border-b border-slate-800/50 pb-2 last:border-0 last:pb-0">
+    <div className="text-xs text-slate-400">{label}</div>
+    <div className={cn('font-semibold truncate max-w-37.5 text-sm', highlight ? 'text-rose-300' : 'text-slate-200')}>
+      {value}
     </div>
   </div>
 );
