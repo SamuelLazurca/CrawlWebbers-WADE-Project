@@ -14,7 +14,6 @@ export const getGraphData = async (
     return response.data;
   }
 
-  console.error('Failed to fetch graph data:', response.error);
   return {
     center_node: startUri,
     nodes: [],

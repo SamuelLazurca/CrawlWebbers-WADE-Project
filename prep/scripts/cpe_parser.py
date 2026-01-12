@@ -178,6 +178,6 @@ def process_cpe_json_folders(root_folder, output_dir, batch_size=30000):
 
 if __name__ == "__main__":
     process_cpe_json_folders(
-        "CPE",
-        "nist/cpe_rdf_batches"
+        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CPE",
+        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_rdf_batches"
     )

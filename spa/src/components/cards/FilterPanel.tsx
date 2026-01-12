@@ -1,9 +1,9 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import type {FilterItem, FilterRequest, FilterResultItem} from '../../types';
 import {FilterOperator} from '../../types';
-import {parseAgentSuggestions, runFilterQuery} from '../../lib/filter';
-import {Loader2, Plus, Search, Sparkles, X} from 'lucide-react';
+import {Loader2, Plus, Search, X} from 'lucide-react';
 import {useSidebarContext} from "../../context/sidebarContext";
+import { runFilterQuery } from '../../lib/filter';
 
 const DEFAULT_LIMIT = 25;
 
@@ -22,11 +22,8 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const [filters, setFilters] = useState<FilterItem[]>([]);
   const [activeFilters, setActiveFilters] = useState<FilterItem[]>([]);
 
-  const [intelligentMode, setIntelligentMode] = useState(false);
-  const [nlInput, setNlInput] = useState('');
   const [results, setResults] = useState<FilterResultItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [agentLoading, setAgentLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [offset, setOffset] = useState(0);
@@ -36,7 +33,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
     setFilters([]);
     setActiveFilters([]);
     setResults([]);
-    setNlInput('');
     setError(null);
     setOffset(0);
   }, [currentView]);
@@ -50,8 +46,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const removeFilter = (i: number) => setFilters(prev => prev.filter((_, idx) => idx !== i));
 
   const executeQuery = useCallback(async (queryFilters: FilterItem[], queryOffset: number) => {
-    // if (queryFilters.length === 0) return;
-
     setError(null);
     setLoading(true);
 
@@ -66,7 +60,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
       const res = await runFilterQuery(req);
       setResults(res);
     } catch (err: unknown) {
-      console.error(err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -80,28 +73,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const handleRunClick = () => {
     setOffset(0); 
     setActiveFilters(filters);
-  };
-
-  const askAgent = async () => {
-    setError(null);
-    setAgentLoading(true);
-    try {
-      const suggestions = await parseAgentSuggestions(nlInput, datasetClass);
-      if (suggestions && suggestions.length > 0) {
-        setFilters(suggestions);
-        setIntelligentMode(false);
-      } else {
-        setError('The agent could not generate filters from your description.');
-      }
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError("Agent error: " + err.message);
-      } else {
-        setError("Agent error: Unknown error");
-      }
-    } finally {
-      setAgentLoading(false);
-    }
   };
 
   const nextPage = () => { setOffset(prev => prev + limit); };
@@ -132,32 +103,7 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
         </div>
       </div>
 
-      {intelligentMode ? (
-        <div className="space-y-3 p-6 bg-slate-800/40 border border-slate-700 rounded-xl">
-          <div className="flex items-center gap-2 text-emerald-400 mb-2">
-            <Sparkles size={18} />
-            <span className="font-semibold">Natural Language Query</span>
-          </div>
-          <textarea
-            value={nlInput}
-            onChange={e => setNlInput(e.target.value)}
-            rows={3}
-            className="w-full bg-slate-900 p-3 rounded-lg border border-slate-700 text-sm text-slate-200 focus:border-emerald-500 outline-none transition-colors"
-            placeholder={`Example: "Find ${currentView?.label || 'items'} related to 'security' created after 2020"`}
-          />
-          <div className="flex items-center gap-2">
-            <button
-              onClick={askAgent}
-              disabled={agentLoading || nlInput.trim().length === 0}
-              className="px-4 py-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-white disabled:opacity-50 text-sm font-medium transition-colors flex items-center gap-2"
-            >
-              {agentLoading ? <Loader2 size={14} className="animate-spin"/> : <Sparkles size={14} />}
-              Generate Filters
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
+      <div className="space-y-2">
           {filters.map((f, idx) => (
             <div key={idx} className="grid grid-cols-12 gap-2 items-center p-2 bg-slate-800/50 border border-slate-700/50 rounded-lg">
               <input
@@ -210,7 +156,6 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
             <Plus size={16} /> Add Condition
           </button>
         </div>
-      )}
 
       {error && (
         <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex items-center gap-2">

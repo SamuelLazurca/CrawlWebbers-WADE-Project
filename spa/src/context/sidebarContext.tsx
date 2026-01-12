@@ -17,7 +17,6 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const handleSetDataset = (d: Dataset | null) => {
     setBaseDataset(d);
 
-    // Auto-select the first view when the dataset changes
     if (d && d.views.length > 0) {
       setCurrentView(d.views[0]);
     } else {

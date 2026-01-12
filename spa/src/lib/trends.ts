@@ -15,7 +15,6 @@ export const getTrendData = async (
     return response.data;
   }
 
-  console.error('Failed to fetch trend data:', response.error);
   return {
     property: propertyUri,
     granularity,

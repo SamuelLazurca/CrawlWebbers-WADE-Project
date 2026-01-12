@@ -107,6 +107,6 @@ def process_cwe_xml(zip_path, output_ttl):
 
 
 if __name__ == "__main__":
-    zip_loc = r"CWE/Full-Downloads/cwec_latest.xml.zip"
-    out_ttl = r"nist/cwe_rdf.ttl"
+    zip_loc = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CWE/Full-Downloads/cwec_latest.xml.zip"
+    out_ttl = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cwe_rdf.ttl"
     process_cwe_xml(zip_loc, out_ttl)
