@@ -32,7 +32,7 @@ export async function runFilterQuery(req: FilterRequest): Promise<FilterResultIt
 }
 
 export async function parseAgentSuggestions(naturalText: string, datasetClass?: string): Promise<FilterItem[]> {
-  const res = await fetch(`${API_BASE}/agent/parse`, {
+  const res = await fetch(`${API_BASE}/filter/agent`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text: naturalText, dataset_class: datasetClass }),

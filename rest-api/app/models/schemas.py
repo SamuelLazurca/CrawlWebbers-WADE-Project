@@ -1,7 +1,8 @@
 from enum import Enum
 from typing import Generic, TypeVar, List, Optional, Union, Dict, Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
+from pydantic.generics import GenericModel
 
 T = TypeVar("T")
 
@@ -159,9 +160,6 @@ class FilterResultItem(BaseModel):
     type: Optional[str] = None
     matches: Dict[str, Any] = {}
 
-
-# --- COMPARE EXTENSION MODELS ---
-
 class ComparisonItem(BaseModel):
     property_uri: str
     property_label: str
@@ -174,3 +172,37 @@ class ComparisonResponse(BaseModel):
     common_properties: List[ComparisonItem] = []
     unique_to_a: List[ComparisonItem] = []
     unique_to_b: List[ComparisonItem] = []
+
+class AgentFilterItem(BaseModel):
+    property_uri: str
+    operator: str
+    value: Any
+    path_to_target: Optional[str] = None
+
+    @validator("operator")
+    def operator_must_be_allowed(cls, v):
+        allowed = {"TRANSITIVE","CONTAINS","NOT_CONTAINS","EQUALS","NOT_EQUALS","GT","LT"}
+        if v not in allowed:
+            raise ValueError(f"Operator not allowed: {v}")
+        return v
+
+class AgentRequest(BaseModel):
+    text: str = Field(..., description="Natural language description for filtering (e.g. 'Find vulns mentioning log4j by vendor X')")
+    dataset_class: Optional[str] = Field(None, description="Optional dataset class URI to scope the query")
+    limit: Optional[int] = 25
+    offset: Optional[int] = 0
+
+class AgentResponse(BaseModel):
+    suggestions: List[AgentFilterItem]
+
+class FilterRequest(BaseModel):
+    dataset_class: str
+    filters: list
+    limit: int = 25
+    offset: int = 0
+
+class FilterResultItem(BaseModel):
+    uri: str
+    label: str
+    type: str
+    matches: dict
