@@ -36,10 +36,8 @@ export const AnalyticsBuilder: React.FC = () => {
           agg,
           20
         );
-        console.log("Fetched analytics data:", data);
         setChartData(Array.isArray(data) ? data : []);
       } catch (error) {
-        console.error("Fetch error:", error);
         setChartData([]);
       } finally {
         setLoading(false);

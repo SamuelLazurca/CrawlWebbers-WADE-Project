@@ -249,30 +249,23 @@ def build_distribution_query(
 ) -> str:
     class_filter = f"?s a <{target_class}> ." if target_class else ""
 
-    # 1. Handle Property vs URI
     if (target_property.startswith("http://") or target_property.startswith(
             "https://")) and "/http" not in target_property:
         prop_pred = f"<{target_property}>"
     else:
         prop_pred = target_property
 
-    # 2. Logic to detect Inverse Properties (counting incoming edges)
-    # If the property path starts with ^, we Group By SUBJECT (the Entity) and Count OBJECTS (the Links).
-    # Otherwise, we Group By OBJECT (the Value) and Count SUBJECTS (the Entities).
     is_inverse = target_property.strip().startswith("^")
 
     if is_inverse:
-        # INVERSE: "Top Active Users" (Group by User ?s, Count Ratings ?rawVal)
         group_var = "?s"
         count_var = "?rawVal"
-        label_target = "?s"  # We need the label of the User/Entity
+        label_target = "?s"  
     else:
-        # DIRECT: "Movies by Genre" (Group by Genre ?rawVal, Count Movies ?s)
         group_var = "?rawVal"
         count_var = "?s"
-        label_target = "?rawVal"  # We need the label of the Genre/Value
+        label_target = "?rawVal"  
 
-    # 3. Handle Granularity (Date grouping) - Only applies to ?rawVal
     if granularity == GranularityEnum.YEAR:
         bind_logic = "BIND(STR(YEAR(?rawVal)) as ?groupKey)"
     elif granularity == GranularityEnum.MONTH:
@@ -280,7 +273,6 @@ def build_distribution_query(
     elif granularity == GranularityEnum.DAY:
         bind_logic = "BIND(SUBSTR(STR(?rawVal), 1, 10) as ?groupKey)"
     else:
-        # Generic Label Resolution for the Group Key
         bind_logic = f"""
         OPTIONAL {{ {label_target} rdfs:label | schema:name | skos:prefLabel ?lbl }}
         BIND(COALESCE(STR(?lbl), STR({label_target})) as ?groupKey)
@@ -309,40 +301,30 @@ def build_custom_analytics_query(
 ) -> str:
     class_filter = f"?s a <{target_class}> ." if target_class else ""
 
-    # 1. Wrapper Logic (Handle raw URIs vs Paths)
     if (dimension.startswith("http://") or dimension.startswith("https://")) and "/http" not in dimension:
         dim_pred = f"<{dimension}>"
     else:
         dim_pred = dimension
 
-    # 2. Detect Inverse Property (e.g. ^schema:author)
     is_inverse = dimension.strip().startswith("^")
 
     if is_inverse:
-        # INVERSE: Group by the Entity (?s), Count the Links (?dimVal)
-        # Example: "Active Users" -> Group by User, Count Ratings
         group_node = "?s"
         count_node = "?dimVal"
     else:
-        # NORMAL: Group by the Value (?dimVal), Count the Entities (?s)
-        # Example: "Movies by Genre" -> Group by Genre, Count Movies
         group_node = "?dimVal"
         count_node = "?s"
 
-    # 3. Handle Metric / Aggregation
     if not metric:
-        # Default: Frequency Count
         selection = f"(COUNT(DISTINCT {count_node}) as ?val)"
         metric_pattern = ""
     else:
-        # If Metric exists, wrap it properly
         if (metric.startswith("http://") or metric.startswith("https://")) and "/http" not in metric:
             met_pred = f"<{metric}>"
         else:
             met_pred = metric
 
         selection = f"({aggregation.value}(xsd:decimal(?metricRaw)) as ?val)"
-        # Metrics usually apply to the main Subject (?s)
         metric_pattern = f"?s {met_pred} ?metricRaw ."
 
     return f"""

@@ -120,7 +120,6 @@ export default function CombinedGraphVis() {
         }
       }
 
-      console.log('Expanding node:', node.id);
       const res = await getGraphData(node.id, currentView?.id);
 
       setGraphData(prev => {
@@ -142,7 +141,6 @@ export default function CombinedGraphVis() {
         };
       });
     } catch (err) {
-      console.error('Failed to expand node', err);
     }
   };
 

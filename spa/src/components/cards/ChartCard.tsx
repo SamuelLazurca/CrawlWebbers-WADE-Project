@@ -29,7 +29,6 @@ interface ChartCardProps<T extends object> {
   headerAction?: React.ReactNode;
 }
 
-// Define a simple interface to avoid Recharts type conflicts
 interface CustomTooltipProps {
   active?: boolean;
   payload?: TooltipPayloadItem[];

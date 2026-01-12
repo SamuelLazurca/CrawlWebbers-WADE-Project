@@ -71,5 +71,4 @@ def get_custom_analytics_query(
         return data
 
     except Exception as e:
-        print(f"SPARQL Error: {str(e)}")
         raise HTTPException(status_code=500, detail="Error executing semantic query")

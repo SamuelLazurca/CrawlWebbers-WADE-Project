@@ -6,12 +6,8 @@ from pydantic.generics import GenericModel
 
 T = TypeVar("T")
 
-
 class ItemsResponseSchema(BaseModel, Generic[T]):
     items: List[T]
-
-
-# --- CONFIGURATION MODELS ---
 
 class VisualizationOption(BaseModel):
     id: str
@@ -25,32 +21,26 @@ class VisualizationModule(BaseModel):
     description: Optional[str] = None
     options: List[VisualizationOption] = []
 
-
 class AnalyzableProperty(BaseModel):
     """
     Enhanced to support the new Ontology metadata
     """
     uri: str
     label: str
-    type: str # 'dimension' or 'metric'
-    # New UI hints
-    visualization_type: Optional[str] = "Categorical" # e.g. Temporal, Text
+    type: str 
+    visualization_type: Optional[str] = "Categorical" 
     default_aggregation: Optional[str] = "COUNT"
     allowed_aggregations: List[str] = []
 
 
 class DataViewSchema(BaseModel):
-    """
-    NEW: Represents a specific perspective (e.g., 'Movies' vs. 'Ratings')
-    """
     id: str
     label: str
     target_class: str
-    icon: Optional[str] = "table"  # e.g. 'film', 'bug'
+    icon: Optional[str] = "table"  
     description: Optional[str] = None
     example_resource: Optional[str] = None
 
-    # The config now lives here, inside the View
     dimensions: List[AnalyzableProperty] = []
     metrics: List[AnalyzableProperty] = []
     supported_visualizations: List[VisualizationModule] = []
@@ -62,7 +52,6 @@ class DatasetSchema(BaseModel):
     url: str
     description: str
 
-    # Metadata
     size_in_bytes: int
     number_of_files: int
     number_of_downloads: int
@@ -70,18 +59,13 @@ class DatasetSchema(BaseModel):
     uploaded_by: Optional[str] = None
     uploaded_by_url: Optional[str] = None
 
-    # A dataset now contains multiple views
     views: List[DataViewSchema] = []
-
-
-# --- TRENDS & ANALYTICS MODELS ---
 
 class GranularityEnum(str, Enum):
     NONE = "none"
     YEAR = "year"
     MONTH = "month"
     DAY = "day"
-
 
 class AggregationType(str, Enum):
     COUNT = "count"
@@ -106,7 +90,6 @@ class TrendsResponse(BaseModel):
     data: List[TrendPoint]
 
 
-# --- GRAPH VISUALIZATION MODELS ---
 
 class GraphNode(BaseModel):
     id: str
@@ -127,8 +110,6 @@ class GraphResponse(BaseModel):
     nodes: List[GraphNode]
     links: List[GraphLink]
 
-
-# --- INTELLIGENT FILTERING MODELS ---
 
 class FilterOperator(str, Enum):
     EQUALS = "EQ"

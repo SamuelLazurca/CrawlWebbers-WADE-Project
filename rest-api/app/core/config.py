@@ -4,7 +4,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://34.69.173.57:3030/davi/sparql")
-# FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi/sparql")
+API_KEY = os.getenv("API_KEY", "")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
 
 PREFIXES = """
