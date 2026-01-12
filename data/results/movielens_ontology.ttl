@@ -136,3 +136,46 @@ davi-mov:hasGenomeTag a owl:ObjectProperty ;
     rdfs:range davi-mov:GenomeTag ;
     davi-meta:isDimension "true"^^xsd:boolean ;
     davi-meta:uiLabel "Genome Tag Category" .
+
+# ==========================================
+# INVERSE PROPERTIES (With Explicit SPARQL Paths)
+# ==========================================
+
+# View: USERS -> Dimensions: "Ratings Given"
+# Logic: ?person ^schema:author ?rating
+davi-mov:generatedRating a owl:ObjectProperty ;
+    rdfs:label "Ratings Given"@en ;
+    rdfs:domain schema:Person ;
+    rdfs:range schema:Rating ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Ratings Activity" ;
+    davi-meta:visualizationType "Categorical" ;
+    davi-meta:sparqlPath "^schema:author" .
+
+# View: GENOME DEFS -> Dimensions: "Movies with this Tag"
+# Logic: ?tag ^davi-mov:hasGenomeTag ?relevance
+davi-mov:usedInGenome a owl:ObjectProperty ;
+    rdfs:label "Used In Genome"@en ;
+    rdfs:domain davi-mov:GenomeTag ;
+    rdfs:range davi-mov:GenomeRelevance ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Tag Usage Frequency" ;
+    davi-meta:sparqlPath "^davi-mov:hasGenomeTag" .
+
+# View: MOVIES -> Dimensions: "Incoming Ratings"
+# Logic: ?movie ^schema:itemReviewed ?rating
+davi-mov:receivedRating a owl:ObjectProperty ;
+    rdfs:label "Received Ratings"@en ;
+    rdfs:domain schema:Movie ;
+    rdfs:range schema:Rating ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:sparqlPath "^schema:itemReviewed" .
+
+# View: MOVIES -> Dimensions: "Incoming Tags"
+# Logic: ?movie ^davi-mov:tagsMovie ?application
+davi-mov:receivedTag a owl:ObjectProperty ;
+    rdfs:label "Received User Tags"@en ;
+    rdfs:domain schema:Movie ;
+    rdfs:range davi-mov:TagApplication ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:sparqlPath "^davi-mov:tagsMovie" .

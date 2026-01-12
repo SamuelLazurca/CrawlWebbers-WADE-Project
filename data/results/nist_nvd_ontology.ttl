@@ -189,3 +189,37 @@ skos:narrower a owl:ObjectProperty ;
     rdfs:label "Narrower Weakness"@en ;
     rdfs:domain davi-nist:Weakness ;
     rdfs:range davi-nist:Weakness .
+
+# ==========================================
+# 5. INVERSE PROPERTIES (For "Most Affected" Analytics)
+# ==========================================
+
+# View: SOFTWARE (CPE) -> Dimensions: "Known Vulnerabilities"
+# Logic: ?software ^davi-nist:affectsSoftware ?vulnerability
+davi-nist:affectedByVulnerability a owl:ObjectProperty ;
+    rdfs:label "Affected By Vulnerability"@en ;
+    rdfs:domain schema:SoftwareApplication ;
+    rdfs:range davi-nist:Vulnerability ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Vulnerability Count" ;
+    davi-meta:sparqlPath "^davi-nist:affectsSoftware" .
+
+# View: VENDORS (Organization) -> Dimensions: "Vulnerable Products"
+# Logic: ?org ^schema:manufacturer ?software
+davi-nist:manufacturesSoftware a owl:ObjectProperty ;
+    rdfs:label "Manufactures Product"@en ;
+    rdfs:domain schema:Organization ;
+    rdfs:range schema:SoftwareApplication ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "Product Count" ;
+    davi-meta:sparqlPath "^schema:manufacturer" .
+
+# View: CWE -> Dimensions: "Related CVEs"
+# Logic: ?weakness ^davi-nist:hasWeakness ?cve
+davi-nist:relatedCVEs a owl:ObjectProperty ;
+    rdfs:label "Related CVEs"@en ;
+    rdfs:domain davi-nist:Weakness ;
+    rdfs:range davi-nist:Vulnerability ;
+    davi-meta:isDimension "true"^^xsd:boolean ;
+    davi-meta:uiLabel "CVE Count" ;
+    davi-meta:sparqlPath "^davi-nist:hasWeakness" .

@@ -10,4 +10,5 @@ results/movielens/
 results/genome_scores.ttl
 results/genome_defs.ttl
 results/ratings.ttl
+results/ratings_sample.ttl
 results/user_tags.ttl
