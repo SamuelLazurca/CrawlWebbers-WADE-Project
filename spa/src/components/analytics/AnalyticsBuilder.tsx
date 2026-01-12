@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { useSidebarContext } from '../../context/sidebarContext';
-import { getCustomAnalytics } from '../../lib/analytics';
-import { ChartCard } from '../cards/ChartCard';
-import { Layout, Database, Calculator, Loader2 } from 'lucide-react';
-import type { TrendPoint } from '../../types';
+import React, {useEffect, useState} from 'react';
+import {useSidebarContext} from '../../context/sidebarContext';
+import {getCustomAnalytics} from '../../lib/analytics';
+import {ChartCard} from '../cards/ChartCard';
+import {Calculator, Database, Layout, Loader2} from 'lucide-react';
+import type {TrendPoint} from '../../types';
 
 export const AnalyticsBuilder: React.FC = () => {
   const { baseDataset } = useSidebarContext();
@@ -91,7 +91,7 @@ export const AnalyticsBuilder: React.FC = () => {
         </div>
       </div>
 
-      <div className="relative min-h-[400px]">
+      <div className="relative min-h-100">
         {loading && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950/40 backdrop-blur-sm z-10 rounded-2xl">
             <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
@@ -109,7 +109,7 @@ export const AnalyticsBuilder: React.FC = () => {
             height={400}
           />
         ) : (
-          <div className="h-[400px] border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20">
+          <div className="h-100 border-2 border-dashed border-slate-800 rounded-2xl flex flex-col items-center justify-center text-slate-500 bg-slate-900/20">
             <Layout size={48} className="mb-4 opacity-20" />
             <p>Select a dimension to start analysis</p>
           </div>

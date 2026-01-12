@@ -1,27 +1,28 @@
 import React from 'react';
 import {
-  BarChart,
   Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
+  BarChart,
+  CartesianGrid,
   Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
 } from 'recharts';
-import { cn } from '../../lib/utils';
+import {cn} from '../../lib/utils';
+import type {RechartsData, TooltipPayloadItem} from "../../types";
 
-interface ChartCardProps {
+interface ChartCardProps<T extends object> {
   title: string;
   subtitle?: string;
   type: 'bar' | 'line' | 'pie';
-  data: any[];
-  dataKey: string;
-  xKey?: string;
+  data: T[];
+  dataKey: keyof T;
+  xKey?: keyof T;
   height?: number;
   colors?: string[];
   onClick?: () => void;
@@ -31,7 +32,7 @@ interface ChartCardProps {
 // Define a simple interface to avoid Recharts type conflicts
 interface CustomTooltipProps {
   active?: boolean;
-  payload?: any[];
+  payload?: TooltipPayloadItem[];
   label?: string;
 }
 
@@ -51,24 +52,24 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   return null;
 };
 
-export const ChartCard: React.FC<ChartCardProps> = ({
+export const ChartCard = <T extends object>({
   title,
   subtitle,
   type,
   data,
   dataKey,
-  xKey = 'label',
+  xKey = 'label' as keyof T,
   height = 300,
   colors = DEFAULT_COLORS,
   onClick,
   headerAction,
-}) => {
+}: ChartCardProps<T>) => {
   return (
     <div
       onClick={onClick}
       className={cn(
         'rounded-2xl p-6',
-        'bg-gradient-to-br from-slate-800/30 to-slate-900/20',
+        'bg-linear-to-br from-slate-800/30 to-slate-900/20',
         'border border-slate-700/50 backdrop-blur-sm',
         onClick &&
           'cursor-pointer hover:shadow-xl hover:scale-105 hover:-translate-y-1 transition-all duration-300'
@@ -88,9 +89,9 @@ export const ChartCard: React.FC<ChartCardProps> = ({
         {type === 'pie' ? (
           <PieChart>
             <Pie
-              data={data}
-              dataKey={dataKey}
-              nameKey={xKey}
+              data={data as RechartsData[]}
+              dataKey={dataKey as string}
+              nameKey={xKey as string}
               cx='50%'
               cy='50%'
               outerRadius={80}
@@ -104,7 +105,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
           </PieChart>
         ) : type === 'bar' ? (
           <BarChart
-            data={data}
+            data={data as RechartsData[]}
             margin={{ top: 10, right: 30, left: 0, bottom: 10 }}
           >
             <CartesianGrid
@@ -113,7 +114,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
               opacity={0.3}
             />
             <XAxis
-              dataKey={xKey}
+              dataKey={xKey as string}
               stroke='#94a3b8'
               style={{ fontSize: 12 }}
               axisLine={false}
@@ -121,7 +122,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
             <YAxis stroke='#94a3b8' style={{ fontSize: 12 }} axisLine={false} />
             <Tooltip content={<CustomTooltip />} />
             <Bar
-              dataKey={dataKey}
+              dataKey={dataKey as string}
               fill={colors[0]}
               radius={[8, 8, 0, 0]}
               animationDuration={800}
@@ -129,7 +130,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
           </BarChart>
         ) : (
           <LineChart
-            data={data}
+            data={data as RechartsData[]}
             margin={{ top: 10, right: 30, left: 0, bottom: 10 }}
           >
             <CartesianGrid
@@ -138,7 +139,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
               opacity={0.3}
             />
             <XAxis
-              dataKey={xKey}
+              dataKey={xKey as string}
               stroke='#94a3b8'
               style={{ fontSize: 12 }}
               axisLine={false}
@@ -147,7 +148,7 @@ export const ChartCard: React.FC<ChartCardProps> = ({
             <Tooltip content={<CustomTooltip />} />
             <Line
               type='monotone'
-              dataKey={dataKey}
+              dataKey={dataKey as string}
               stroke={colors[0]}
               strokeWidth={3}
               dot={false}

@@ -1,5 +1,5 @@
-import type { TrendData, TrendPoint } from '../types';
-import { safeFetch } from '../api/client';
+import type {TrendData, TrendPoint} from '../types';
+import {safeFetch} from '../api/client';
 
 export const getCustomAnalytics = async (
   dimension: string,

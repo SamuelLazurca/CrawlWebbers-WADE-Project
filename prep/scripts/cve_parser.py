@@ -16,11 +16,11 @@ log = logging.getLogger("cve-to-rdf")
 CVE = Namespace("https://nvd.nist.gov/vuln/detail/")
 CWE = Namespace("https://cwe.mitre.org/data/definitions/")
 CPE = Namespace("https://nvd.nist.gov/products/cpe/detail/")
-CVSS = Namespace("https://www.first.org/cvss/")
-DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
+CVSS_STD = Namespace("https://www.first.org/cvss/")
+DAVI_NIST = Namespace("https://purl.org/davi/vocab/nist#")
 SCHEMA = Namespace("http://schema.org/")
 
-CPE_MAP_PATH = "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cpe_map.json"
+CPE_MAP_PATH = "nist/cpe_rdf_batches/cpe_map.json"
 
 
 def safe_uri(namespace, value):
@@ -107,10 +107,18 @@ def parse_cve_json(data, g, cpe_map):
         if url:
             g.add((cve_uri, SCHEMA.url, URIRef(url)))
 
+    # Pass the cve_uri to metric parser so we can mint a unique sub-URI
     parse_cvss_metrics(data.get("metrics", {}), cve_uri, g)
 
 
 def parse_cvss_metrics(metrics, cve_uri, g):
+    """
+    Creates a distinct metric node (Reification).
+    URI Style: davi-nist:metric_CVE-ID_vVERSION
+    """
+    # Extract the CVE ID string from the URI (e.g., "CVE-1999-0199")
+    cve_id_str = cve_uri.split("/")[-1]
+
     for key in ("cvssMetricV31", "cvssMetricV30", "cvssMetricV2"):
         for entry in metrics.get(key, []):
             if entry.get("type") != "Primary":
@@ -121,14 +129,26 @@ def parse_cvss_metrics(metrics, cve_uri, g):
             if not version:
                 continue
 
-            if version == "2.0" or version == "1.0":
-                version = version[0]
+            # Normalize the version for the ID (e.g., "3.1" -> "3-1") to be safe in URIs
+            ver_clean = version.replace(".", "-")
 
-            metric_uri = URIRef(f"https://www.first.org/cvss/v{version}")
+            # --- THE CHANGE: Create an ID-style URI in your namespace ---
+            # e.g., davi-nist:metric_CVE-1999-0199_v3-1
+            metric_node_name = f"metric_{cve_id_str}_v{ver_clean}"
+            metric_uri = DAVI_NIST[metric_node_name]
 
-            g.add((metric_uri, RDF.type, DAVI_NIST.CVSSMetric))
+            # 1. Link CVE -> Metric Node
             g.add((cve_uri, DAVI_NIST.hasCVSSMetric, metric_uri))
 
+            # 2. Define the Metric Node
+            g.add((metric_uri, RDF.type, DAVI_NIST.CVSSMetric))
+
+            # Link to the standard (Knowledge Model)
+            # This is useful for your "Intelligent Filtering" extension later
+            std_ver = version[0] if version.startswith(("1", "2")) else version
+            g.add((metric_uri, DCTERMS.conformsTo, URIRef(f"https://www.first.org/cvss/v{std_ver}")))
+
+            # 3. Add Data Properties
             add_literal_if_present(
                 g, metric_uri, DAVI_NIST.baseScore,
                 cvss.get("baseScore"), datatype=XSD.decimal
@@ -154,7 +174,7 @@ def process_all_cves(input_dir, output_dir):
 
     batch_idx = 0
 
-    for fname in sorted(os.listdir(input_dir))[:6]:
+    for fname in sorted(os.listdir(input_dir)):
         if not fname.endswith(".7z"):
             continue
 
@@ -194,6 +214,6 @@ def process_all_cves(input_dir, output_dir):
 
 if __name__ == "__main__":
     process_all_cves(
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CVE",
-        "D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cve_rdf_batches"
+        "CVE",
+        "nist/cve_rdf_batches"
     )

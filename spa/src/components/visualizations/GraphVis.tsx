@@ -4,7 +4,7 @@ import ForceGraph3D from 'react-force-graph-3d';
 import {useSidebarContext} from '../../context/sidebarContext';
 import {getGraphData} from '../../lib/graph';
 import {cn} from '../../lib/utils';
-import type {GraphEdge, GraphNode} from '../../types';
+import type {GraphEdge, GraphEmptyState, GraphNode} from '../../types';
 
 export default function CombinedGraphVis() {
   const { baseDataset } = useSidebarContext();
@@ -13,11 +13,16 @@ export default function CombinedGraphVis() {
     nodes: [],
     links: [],
   });
-  const startUri = baseDataset?.id === 'nist-nvd'
-    ? 'https://nvd.nist.gov/vuln/detail/CVE-1999-0199'
-    : 'https://www.imdb.com/title/tt0114709';
+  const startUri = baseDataset?.example_resource ?? '';
+
+  const graphState: GraphEmptyState = !baseDataset
+    ? { kind: 'no-dataset' }
+    : startUri === ''
+      ? { kind: 'missing-start-uri' }
+      : { kind: 'ready', startUri };
 
   useEffect(() => {
+    if (graphState.kind !== 'ready') return;
     async function loadGraph() {
       const res = await getGraphData(startUri);
 
@@ -39,7 +44,7 @@ export default function CombinedGraphVis() {
     }
 
     void loadGraph();
-  }, [baseDataset, startUri]);
+  }, [baseDataset, graphState.kind, startUri]);
 
   const handleNodeClick = async (node: GraphNode) => {
     try {
@@ -69,6 +74,33 @@ export default function CombinedGraphVis() {
     }
   };
 
+  const renderEmptyState = () => {
+    if (graphState.kind === 'ready') return null;
+
+    const message =
+      graphState.kind === 'no-dataset'
+        ? {
+          title: 'No dataset selected',
+          body: 'Please select a dataset to explore its graph.',
+        }
+        : {
+          title: 'Graph unavailable',
+          body:
+            'The selected dataset does not define a starting resource for graph exploration.',
+        };
+
+    return (
+      <div className="absolute inset-0 z-20 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm">
+        <div className="max-w-md text-center p-6 rounded-xl border border-slate-700 bg-slate-900 shadow-xl">
+          <h3 className="text-lg font-semibold text-amber-400 mb-2">
+            {message.title}
+          </h3>
+          <p className="text-sm text-slate-300">{message.body}</p>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className={cn(
       'rounded-2xl overflow-hidden border border-slate-700/50 h-96 bg-slate-900 relative',
@@ -93,29 +125,33 @@ export default function CombinedGraphVis() {
         </button>
       </div>
 
-      {is3D ? (
-        <ForceGraph3D
-          graphData={graphData}
-          nodeLabel="label"
-          nodeAutoColorBy="group"
-          backgroundColor="#020617"
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          nodeOpacity={0.9}
-          linkOpacity={0.3}
-          linkWidth={1}
-          onNodeClick={handleNodeClick}
-        />
-      ) : (
-        <ForceGraph2D
-          graphData={graphData}
-          nodeLabel="label"
-          nodeAutoColorBy="group"
-          onNodeClick={handleNodeClick}
-          linkDirectionalArrowLength={3.5}
-          linkDirectionalArrowRelPos={1}
-          backgroundColor="#0f172a"
-        />
+      {renderEmptyState()}
+
+      {graphState.kind === 'ready' && (
+        is3D ? (
+          <ForceGraph3D
+            graphData={graphData}
+            nodeLabel="label"
+            nodeAutoColorBy="group"
+            backgroundColor="#020617"
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            nodeOpacity={0.9}
+            linkOpacity={0.3}
+            linkWidth={1}
+            onNodeClick={handleNodeClick}
+          />
+        ) : (
+          <ForceGraph2D
+            graphData={graphData}
+            nodeLabel="label"
+            nodeAutoColorBy="group"
+            onNodeClick={handleNodeClick}
+            linkDirectionalArrowLength={3.5}
+            linkDirectionalArrowRelPos={1}
+            backgroundColor="#0f172a"
+          />
+        )
       )}
     </div>
   );

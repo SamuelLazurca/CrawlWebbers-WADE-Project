@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import type { FilterItem, FilterRequest, FilterResultItem } from '../../types/index';
-import { FilterOperator } from '../../types/index';
-import { runFilterQuery, parseAgentSuggestions } from '../../lib/filter';
-import { Search, Plus, X } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import type {FilterItem, FilterRequest, FilterResultItem} from '../../types';
+import {FilterOperator} from '../../types';
+import {parseAgentSuggestions, runFilterQuery} from '../../lib/filter';
+import {Plus, Search, X} from 'lucide-react';
+import {useSidebarContext} from "../../context/sidebarContext.tsx";
 
 const DEFAULT_LIMIT = 25;
 
@@ -27,6 +28,7 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   const [error, setError] = useState<string | null>(null);
   const [limit, setLimit] = useState(DEFAULT_LIMIT);
   const [offset, setOffset] = useState(0);
+  const {baseDataset} = useSidebarContext()
 
   const updateFilter = (i: number, patch: Partial<FilterItem>) => {
     setFilters(prev => prev.map((f, idx) => idx === i ? ({...f, ...patch}) : f));
@@ -75,7 +77,7 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
   useEffect(() => {
     if (loading) return;
     void runQuery();
-  }, [offset]);
+  }, [offset, baseDataset]);
 
   return (
     <div className="space-y-4">
@@ -194,7 +196,7 @@ export const FilterPanel: React.FC<Props> = ({ datasetClass }) => {
           </div>
         </div>
 
-        <div className="bg-slate-900 p-3 rounded min-h-[120px]">
+        <div className="bg-slate-900 p-3 rounded min-h-30">
           {loading ? (
             <div className="text-sm text-slate-400">Loading...</div>
           ) : results.length === 0 ? (

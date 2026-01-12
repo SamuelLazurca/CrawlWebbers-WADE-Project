@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useFilterStore } from '../../stores/filterStore';
-import { useSidebarContext } from '../../context/sidebarContext';
-import { PresetChart } from '../cards/PresetChart';
-import { AnalyticsBuilder } from '../analytics/AnalyticsBuilder';
+import React, {useEffect, useState} from 'react';
+import {useFilterStore} from '../../stores/filterStore';
+import {useSidebarContext} from '../../context/sidebarContext';
+import {PresetChart} from '../cards/PresetChart';
+import {AnalyticsBuilder} from '../analytics/AnalyticsBuilder';
 import CombinedGraphVis from '../visualizations/GraphVis';
-import { CompareCard } from './CompareCard';
-import { FilterPanel } from '../cards/FilterPanel';
+import {CompareCard} from './CompareCard';
+import {FilterPanel} from '../cards/FilterPanel';
 
 export const DashboardGrid: React.FC = () => {
   const { activeTab } = useFilterStore();
@@ -23,6 +23,7 @@ export const DashboardGrid: React.FC = () => {
 
   useEffect(() => {
     if (allOptions.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlotConfigs({
         slot1: allOptions[0]?.id || '',
         slot2: allOptions[1]?.id || '',
@@ -57,7 +58,7 @@ export const DashboardGrid: React.FC = () => {
         {currentOption ? (
           <PresetChart option={currentOption} />
         ) : (
-          <div className='h-[300px] border-2 border-dashed border-slate-800 rounded-2xl flex items-center justify-center text-slate-600'>
+          <div className='h-75 border-2 border-dashed border-slate-800 rounded-2xl flex items-center justify-center text-slate-600'>
             Select a metric
           </div>
         )}
@@ -79,8 +80,13 @@ export const DashboardGrid: React.FC = () => {
       {activeTab === 'builder' && <AnalyticsBuilder />}
       {activeTab === 'explorer' && <CombinedGraphVis />}
       {activeTab === 'compare' && <CompareCard />}
-      {activeTab === 'filter' && (
-        <FilterPanel datasetClass={'http://schema.org/Movie'} />
+      {activeTab === 'filter' && baseDataset?.main_class && (
+        <FilterPanel datasetClass={baseDataset.main_class} />
+      )}
+      {activeTab === 'filter' && !baseDataset?.main_class && (
+        <div className="text-center text-slate-500 py-10">
+          This dataset does not have a configured filtering class.
+        </div>
       )}
     </div>
   );

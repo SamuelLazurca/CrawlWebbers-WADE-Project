@@ -10,7 +10,7 @@ logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("cwe-to-rdf")
 
 # NAMESPACES
-DAVI_NIST = Namespace("http://davi.app/vocab/nist#")
+DAVI_NIST = Namespace("https://purl.org/davi/vocab/nist#")
 CWE = Namespace("https://cwe.mitre.org/data/definitions/")
 CAPEC = Namespace("https://capec.mitre.org/data/definitions/")
 SCHEMA = Namespace("http://schema.org/")
@@ -107,6 +107,6 @@ def process_cwe_xml(zip_path, output_ttl):
 
 
 if __name__ == "__main__":
-    zip_loc = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/NIST_NVD/CWE/Full-Downloads/cwec_latest.xml.zip"
-    out_ttl = r"D:/Master/Anul2Sem1/WADE/Project/davi/data/results/cwe_rdf.ttl"
+    zip_loc = r"CWE/Full-Downloads/cwec_latest.xml.zip"
+    out_ttl = r"nist/cwe_rdf.ttl"
     process_cwe_xml(zip_loc, out_ttl)

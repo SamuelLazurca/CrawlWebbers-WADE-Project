@@ -28,6 +28,8 @@ export interface Dataset {
   number_of_downloads?: number;
   uploaded_by?: string;
   uploaded_by_url?: string;
+  main_class?: string;
+  example_resource?: string;
   dimensions: AnalyzableProperty[];
   metrics: AnalyzableProperty[];
   supported_visualizations: VisualizationModule[];
@@ -145,3 +147,15 @@ export interface FilterResultItem {
   type?: string;
   matches?: Record<string, string>;
 }
+
+export type RechartsData = Record<string, unknown>;
+
+export interface TooltipPayloadItem {
+  name?: string;
+  value?: string | number;
+}
+
+export type GraphEmptyState =
+  | { kind: 'no-dataset' }
+  | { kind: 'missing-start-uri' }
+  | { kind: 'ready'; startUri: string };

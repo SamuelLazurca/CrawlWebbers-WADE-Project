@@ -1,11 +1,12 @@
+import datetime
+import os
+import re
 from collections import defaultdict
 
 import pandas as pd
-import datetime
-import os
 
 # ================= CONFIGURATION =================
-TOP_N_MOVIES = 2000
+TOP_N_MOVIES = 1000
 MAX_RATINGS_PER_MOVIE = 1000
 GENOME_THRESHOLD = 0.5
 INPUT_DIR = "data"
@@ -86,9 +87,9 @@ def setup_movie_mapping():
     print(f"   Mapped {mapped_count} movies to valid IMDB IDs.")
 
 
-# ================= STEP 2: MOVIES (Schema.org) =================
+# ================= STEP 2: MOVIES =================
 def process_movies():
-    print("Step 2: Processing Movies...")
+    print("Step 2: Processing Movies (with Year Extraction)...")
     movies_df = pd.read_csv(f"{INPUT_DIR}/movies.csv", dtype=str)
 
     with open(f"{OUTPUT_DIR}/movies.ttl", "w", encoding="utf-8") as f:
@@ -102,7 +103,17 @@ def process_movies():
             imdb_suffix = MOVIE_ID_TO_IMDB[m_id]
             movie_node = f"imdb:{imdb_suffix}"
 
-            title = clean_text(row['title'])
+            title_raw = row['title']
+            title = clean_text(title_raw)
+
+            # --- NEW: Extract Year from Title ---
+            # Looks for (1995) at the end of the string
+            match = re.search(r'\((\d{4})\)', title_raw)
+            date_ttl = ""
+            if match:
+                year = match.group(1)
+                # Create a valid xsd:date (e.g., "1995-01-01")
+                date_ttl = f'    schema:datePublished "{year}-01-01"^^xsd:date ;'
 
             # Process Genres into CURIE (e.g., genre:comedy)
             genre_uris = []
@@ -118,6 +129,7 @@ def process_movies():
 {movie_node} a schema:Movie ;
     schema:name "{title}" ;
     dcterms:identifier "{m_id}" ;
+{date_ttl}
 {genre_ttl}
     .
 """)
@@ -127,12 +139,11 @@ def process_movies():
 def process_ratings():
     print(f"Step 3: Processing Ratings (Max {MAX_RATINGS_PER_MOVIE} per movie)...")
 
-    # Track how many ratings we have saved for each movie
     ratings_per_movie_count = defaultdict(int)
+    # Track users we have already defined in this file to avoid duplicates
+    seen_users = set()
 
-    # Using chunksize for memory efficiency
     reader = pd.read_csv(f"{INPUT_DIR}/ratings.csv", chunksize=500000, dtype=str)
-
     with open(f"{OUTPUT_DIR}/ratings.ttl", "w", encoding="utf-8") as f:
         write_header(f)
         total_written = 0
@@ -140,18 +151,15 @@ def process_ratings():
         for chunk in reader:
             buffer = []
 
-            # Iterating rows is safer for memory with huge files.
             for _, row in chunk.iterrows():
                 m_id = row['movieId']
 
                 if m_id not in MOVIE_ID_TO_IMDB:
                     continue
 
-                # 2. Check if we already have enough ratings for this movie
                 if ratings_per_movie_count[m_id] >= MAX_RATINGS_PER_MOVIE:
                     continue
 
-                # Increment counter
                 ratings_per_movie_count[m_id] += 1
                 total_written += 1
 
@@ -164,8 +172,14 @@ def process_ratings():
                 user_node = f"davi-mov:user_{u_id}"
                 movie_node = f"imdb:{imdb_suffix}"
 
+                user_def = ""
+                if u_id not in seen_users:
+                    # We define the user instance explicitly as a Person
+                    user_def = f'{user_node} a schema:Person ; rdfs:label "User {u_id}" .\n'
+                    seen_users.add(u_id)
+
                 buffer.append(f"""
-{rating_node} a schema:Rating ;
+{user_def}{rating_node} a schema:Rating ;
     schema:author {user_node} ;
     schema:itemReviewed {movie_node} ;
     schema:ratingValue {rating} ;
@@ -220,7 +234,6 @@ def process_genome():
 def process_tags_metadata():
     print("Step 5: Processing Tag Definitions and User Tags...")
 
-    # 1. Genome Tag Definitions
     df_defs = pd.read_csv(f"{INPUT_DIR}/genome-tags.csv", dtype=str)
     with open(f"{OUTPUT_DIR}/genome_defs.ttl", "w", encoding="utf-8") as f:
         write_header(f)
@@ -229,8 +242,10 @@ def process_tags_metadata():
             t_name = clean_text(row['tag'])
             f.write(f'davi-mov:genometag_{t_id} a davi-mov:GenomeTag ; rdfs:label "{t_name}" .\n')
 
-    # 2. User Tags (Free text)
+    # User Tags (Free text)
     df_user_tags = pd.read_csv(f"{INPUT_DIR}/tags.csv", dtype=str)
+    seen_users = set()
+
     with open(f"{OUTPUT_DIR}/user_tags.ttl", "w", encoding="utf-8") as f:
         write_header(f)
         for _, row in df_user_tags.iterrows():
@@ -243,13 +258,17 @@ def process_tags_metadata():
             ts = format_date(ts_raw)
             content = clean_text(row['tag'])
 
-            # Using davi-mov:TagApplication (subclass of schema:CreateAction)
             tag_app_node = f"davi-mov:tagapp_{u_id}_{m_id}_{ts_raw}"
             movie_node = f"imdb:{imdb_suffix}"
             user_node = f"davi-mov:user_{u_id}"
 
+            user_def = ""
+            if u_id not in seen_users:
+                user_def = f'{user_node} a schema:Person ; rdfs:label "User {u_id}" .\n'
+                seen_users.add(u_id)
+
             f.write(f"""
-{tag_app_node} a davi-mov:TagApplication ;
+{user_def}{tag_app_node} a davi-mov:TagApplication ;
     davi-mov:taggedBy {user_node} ;
     davi-mov:tagsMovie {movie_node} ;
     davi-mov:tagContent "{content}" ;
@@ -260,7 +279,7 @@ def process_tags_metadata():
 if __name__ == "__main__":
     setup_movie_mapping()
     process_movies()
-    process_tags_metadata()
-    process_genome()
+    # process_tags_metadata()
+    # process_genome()
     # process_ratings()
     print("\nConversion Complete! Output is in 'output_ttl_final/'")

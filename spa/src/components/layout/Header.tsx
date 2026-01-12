@@ -1,8 +1,8 @@
 import React from 'react';
-import { useFilterStore } from '../../stores/filterStore';
-import { useSidebarContext } from '../../context/sidebarContext';
-import { cn } from '../../lib/utils';
-import { Wand2, Share2, Repeat, LayoutDashboard, Menu } from 'lucide-react';
+import {useFilterStore} from '../../stores/filterStore';
+import {useSidebarContext} from '../../context/sidebarContext';
+import {cn} from '../../lib/utils';
+import {LayoutDashboard, Menu, Repeat, Share2, Wand2} from 'lucide-react';
 
 const TABS = [
   { id: 'presets' as const, label: 'Presets', icon: LayoutDashboard },
@@ -54,7 +54,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
                 <span className='animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75' />
                 <span className='relative inline-flex rounded-full h-2 w-2 bg-emerald-500' />
               </span>
-              <span className='text-xs font-medium text-emerald-400 truncate max-w-[160px]'>
+              <span className='text-xs font-medium text-emerald-400 truncate max-w-40'>
                 {baseDataset.name}
               </span>
             </div>

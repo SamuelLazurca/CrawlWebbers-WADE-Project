@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import type { VisualizationOption, TrendPoint } from '../../types/index';
-import { getTrendData } from '../../lib/trends';
-import { ChartCard } from '../cards/ChartCard';
-import { Loader2, Calendar } from 'lucide-react';
+import React, {useEffect, useState} from 'react';
+import type {TrendPoint, VisualizationOption} from '../../types';
+import {getTrendData} from '../../lib/trends';
+import {ChartCard} from './ChartCard.tsx';
+import {Loader2} from 'lucide-react';
 
 interface PresetChartProps {
   option: VisualizationOption;
@@ -40,7 +40,7 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
         </div>
       )}
 
-      <ChartCard
+      <ChartCard<TrendPoint>
         title={option.label}
         subtitle={`Source: ${option.target_property}`}
         type={isDateProperty ? 'line' : 'bar'}

@@ -2,26 +2,23 @@ from enum import Enum
 from typing import Generic, TypeVar, List, Optional, Union, Dict, Any
 
 from pydantic import BaseModel
-from pydantic.generics import GenericModel
 
 T = TypeVar("T")
 
 
-class ItemsResponseSchema(GenericModel, Generic[T]):
+class ItemsResponseSchema(BaseModel, Generic[T]):
     items: List[T]
 
 
-# --- DATASET & CONFIGURATION MODELS ---
+# --- CONFIGURATION MODELS ---
 
 class VisualizationOption(BaseModel):
-    """Represents a 'Preset' option defined in the ontology."""
     id: str
     label: str
     target_property: str
 
 
 class VisualizationModule(BaseModel):
-    """Represents a supported extension (e.g., 'Trends', 'Graph')."""
     id: str
     label: str
     description: Optional[str] = None
@@ -30,11 +27,32 @@ class VisualizationModule(BaseModel):
 
 class AnalyzableProperty(BaseModel):
     """
-    Represents a property tagged with davi-meta:isDimension or davi-meta:isMetric.
-    Used for building custom visualizations.
+    Enhanced to support the new Ontology metadata
     """
     uri: str
     label: str
+    type: str # 'dimension' or 'metric'
+    # New UI hints
+    visualization_type: Optional[str] = "Categorical" # e.g. Temporal, Text
+    default_aggregation: Optional[str] = "COUNT"
+    allowed_aggregations: List[str] = []
+
+
+class DataViewSchema(BaseModel):
+    """
+    NEW: Represents a specific perspective (e.g., 'Movies' vs. 'Ratings')
+    """
+    id: str
+    label: str
+    target_class: str
+    icon: Optional[str] = "table"  # e.g. 'film', 'bug'
+    description: Optional[str] = None
+    example_resource: Optional[str] = None
+
+    # The config now lives here, inside the View
+    dimensions: List[AnalyzableProperty] = []
+    metrics: List[AnalyzableProperty] = []
+    supported_visualizations: List[VisualizationModule] = []
 
 
 class DatasetSchema(BaseModel):
@@ -42,15 +60,17 @@ class DatasetSchema(BaseModel):
     name: str
     url: str
     description: str
+
+    # Metadata
     size_in_bytes: int
     number_of_files: int
     number_of_downloads: int
     added_date: Optional[str] = None
     uploaded_by: Optional[str] = None
     uploaded_by_url: Optional[str] = None
-    supported_visualizations: List[VisualizationModule] = []
-    dimensions: List[AnalyzableProperty] = []
-    metrics: List[AnalyzableProperty] = []
+
+    # A dataset now contains multiple views
+    views: List[DataViewSchema] = []
 
 
 # --- TRENDS & ANALYTICS MODELS ---
@@ -112,10 +132,10 @@ class GraphResponse(BaseModel):
 class FilterOperator(str, Enum):
     EQUALS = "="
     NOT_EQUALS = "!="
-    CONTAINS = "CONTAINS"
-    NOT_CONTAINS = "NOT_CONTAINS"
     GT = ">"
     LT = "<"
+    CONTAINS = "CONTAINS"
+    NOT_CONTAINS = "NOT_CONTAINS"
     TRANSITIVE = "TRANSITIVE"
 
 
@@ -127,7 +147,7 @@ class FilterCondition(BaseModel):
 
 
 class FilterRequest(BaseModel):
-    dataset_class: str
+    target_class: str
     filters: List[FilterCondition]
     limit: int = 50
     offset: int = 0

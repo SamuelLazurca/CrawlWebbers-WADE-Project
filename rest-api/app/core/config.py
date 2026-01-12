@@ -1,6 +1,6 @@
 import os
 
-FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi2/sparql")
+FUSEKI_ENDPOINT = os.getenv("SPARQL_ENDPOINT", "http://localhost:3030/davi3/sparql")
 
 PREFIXES = """
 PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -14,5 +14,5 @@ PREFIX schema: <http://schema.org/>
 # DaVi Custom Namespaces
 PREFIX davi-meta: <https://purl.org/davi/vocab/meta#>
 PREFIX davi-nist: <https://purl.org/davi/vocab/nist#>
-PREFIX davi-mov:  <https://purl.org/davi/vocab/movielens#>
+PREFIX davi-mov: <https://purl.org/davi/vocab/movielens#>
 """
