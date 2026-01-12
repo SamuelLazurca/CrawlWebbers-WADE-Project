@@ -5,7 +5,7 @@ import {cn} from '../../lib/utils';
 import {ChevronRight, Filter, LayoutDashboard, Menu, Repeat, Share2, Wand2} from 'lucide-react';
 
 const TABS = [
-  { id: 'presets' as const, label: 'Presets', icon: LayoutDashboard },
+  { id: 'presets' as const, label: 'Dashboard', icon: LayoutDashboard },
   { id: 'builder' as const, label: 'Analytics', icon: Wand2 },
   { id: 'explorer' as const, label: 'Graph', icon: Share2 },
   { id: 'compare' as const, label: 'Compare', icon: Repeat },

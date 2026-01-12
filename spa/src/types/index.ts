@@ -93,6 +93,9 @@ export interface GraphNode {
   label: string;
   group: string;
   value: number;
+  x?: number;
+  y?: number;
+  z?: number;
 }
 
 export interface GraphEdge {

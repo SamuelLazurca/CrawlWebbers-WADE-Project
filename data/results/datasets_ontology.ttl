@@ -64,6 +64,12 @@ davi-meta:dimensionProperty a owl:ObjectProperty ;
 davi-meta:isDimension a owl:AnnotationProperty ; rdfs:range xsd:boolean .
 davi-meta:isMetric a owl:AnnotationProperty ; rdfs:range xsd:boolean .
 
+# --- Advanced Mapping ---
+davi-meta:sparqlPath a owl:AnnotationProperty ;
+    rdfs:label "SPARQL Property Path"@en ;
+    dcterms:description "Overrides the URI with a raw SPARQL path (e.g., ^schema:author or rel1/rel2)."@en ;
+    rdfs:range xsd:string .
+
 # --- UI Helpers ---
 davi-meta:uiLabel a owl:DatatypeProperty ;
     rdfs:domain owl:Thing ;
@@ -138,7 +144,8 @@ davi-meta:dataset_nist a davi-meta:Dataset ;
         davi-meta:view_nist_cve,      # Vulnerabilities
         davi-meta:view_nist_cwe,      # Weaknesses
         davi-meta:view_nist_software, # CPEs (Software)
-        davi-meta:view_nist_metrics . # CVSS Metrics (Scores)
+        davi-meta:view_nist_metrics,  # CVSS Metrics (Scores)
+        davi-meta:view_nist_vendors . # Vendors
 
 davi-meta:user_acme_researcher a schema:Person ;
     schema:name "tripleshrimp" ;
@@ -183,18 +190,28 @@ davi-meta:view_nist_cve a davi-meta:DataView ;
     davi-meta:targetClass davi-nist:Vulnerability ;
     davi-meta:exampleResource <https://nvd.nist.gov/vuln/detail/CVE-1999-0199> ;
     
-    # Simple Dimensions (Direct Links)
-    davi-meta:hasDimension davi-nist:affectsVendor, davi-nist:hasWeakness ;
+    davi-meta:hasDimension davi-nist:hasWeakness ;
     
-    # Configured Dimensions (Overridden Labels)
+    # NEW: Analyze by Affected Software
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-nist:affectsSoftware ;
+        davi-meta:uiLabel "Affected Software" ;
+        davi-meta:visualizationType "Categorical"
+    ] ;
+    
     davi-meta:hasDimension [
         davi-meta:dimensionProperty schema:datePublished ;
         davi-meta:uiLabel "Publication Date" ;
         davi-meta:visualizationType "Temporal"
     ] ;
 
-    davi-meta:hasMetric davi-nist:baseScore ;
-    davi-meta:supportsVisualization davi-meta:viz_filtering_nist, davi-meta:viz_trends_nist .
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty schema:dateModified ;
+        davi-meta:uiLabel "Last Modified" ;
+        davi-meta:visualizationType "Temporal"
+    ] ;
+
+    davi-meta:supportsVisualization davi-meta:viz_filtering_cve, davi-meta:viz_trends_nist .
 
 # --- NIST VIEW 2: WEAKNESSES (CWE) ---
 davi-meta:view_nist_cwe a davi-meta:DataView ;
@@ -202,8 +219,23 @@ davi-meta:view_nist_cwe a davi-meta:DataView ;
     davi-meta:targetClass davi-nist:Weakness ;
     davi-meta:exampleResource <https://cwe.mitre.org/data/definitions/23> ;
     
-    davi-meta:hasDimension skos:broader ; # Parent-Child relationship
-    davi-meta:supportsVisualization davi-meta:viz_hierarchy_nist .
+    davi-meta:hasDimension skos:broader ; 
+    
+    # NEW: Analyze by Related Attack Patterns (CAPEC)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty skos:related ;
+        davi-meta:uiLabel "Related Attack Patterns (CAPEC)" ;
+        davi-meta:visualizationType "Categorical"
+    ] ;
+
+    # NEW: Analyze by Frequency (Inverse: How many CVEs have this Weakness?)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-nist:relatedCVEs ;
+        davi-meta:uiLabel "Prevalence (CVE Count)" ;
+        davi-meta:sparqlPath "^davi-nist:hasWeakness" 
+    ] ;
+
+    davi-meta:supportsVisualization davi-meta:viz_hierarchy_nist, davi-meta:viz_trends_cwe .
 
 # --- NIST VIEW 3: SOFTWARE (CPE) ---
 davi-meta:view_nist_software a davi-meta:DataView ;
@@ -211,8 +243,16 @@ davi-meta:view_nist_software a davi-meta:DataView ;
     davi-meta:targetClass schema:SoftwareApplication ;
     davi-meta:exampleResource <https://nvd.nist.gov/products/cpe/detail/000007A8-79E3-4DF7-A00E-326188269361> ;
     
-    davi-meta:hasDimension schema:manufacturer, schema:softwareVersion ;
-    davi-meta:supportsVisualization davi-meta:viz_filtering_generic .
+    davi-meta:hasDimension schema:manufacturer, schema:softwareVersion, schema:name, davi-nist:cpe23 ;
+    
+    # NEW: Most Vulnerable Software (Inverse)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-nist:affectedByVulnerability ;
+        davi-meta:uiLabel "Vulnerability Count" ;
+        davi-meta:sparqlPath "^davi-nist:affectsSoftware" 
+    ] ;
+    
+    davi-meta:supportsVisualization davi-meta:viz_filtering_cpe, davi-meta:viz_trends_software .
 
 # --- NIST VIEW 4: CVSS METRICS ---
 davi-meta:view_nist_metrics a davi-meta:DataView ;
@@ -222,7 +262,26 @@ davi-meta:view_nist_metrics a davi-meta:DataView ;
     
     davi-meta:hasMetric davi-nist:baseScore ;
     davi-meta:hasDimension davi-nist:vectorString, dcterms:conformsTo ;
-    davi-meta:supportsVisualization davi-meta:viz_trends_nist .
+    
+    davi-meta:supportsVisualization davi-meta:viz_trends_metrics .
+
+# --- NIST VIEW 5: VENDORS (ORGANIZATION) ---
+davi-meta:view_nist_vendors a davi-meta:DataView ;
+    davi-meta:uiLabel "Vendors (Organizations)" ;
+    davi-meta:targetClass schema:Organization ;
+    # Using a generic example based on your data patterns
+    davi-meta:exampleResource <https://nvd.nist.gov/products/cpe/search/results?keyword=microsoft> ;
+    
+    davi-meta:hasDimension schema:name ;
+    
+    # NEW: Analyze by Product Count (Inverse)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-nist:manufacturesSoftware ;
+        davi-meta:uiLabel "Portfolio Size (Products)" ;
+        davi-meta:sparqlPath "^schema:manufacturer" 
+    ] ;
+    
+    davi-meta:supportsVisualization davi-meta:viz_trends_vendors .
 
 
 # --- MOVIELENS VIEW 1: MOVIES ---
@@ -231,14 +290,30 @@ davi-meta:view_movielens_movies a davi-meta:DataView ;
     davi-meta:targetClass schema:Movie ;
     davi-meta:exampleResource <https://www.imdb.com/title/tt0114709> ;
     
+    # 1. Direct Dimensions
     davi-meta:hasDimension schema:genre ;
+    
+    # 2. Release Year (Temporal)
     davi-meta:hasDimension [
         davi-meta:dimensionProperty schema:datePublished ;
         davi-meta:uiLabel "Release Year" ;
         davi-meta:visualizationType "Temporal"
     ] ;
 
-    davi-meta:hasMetric schema:ratingValue ;
+    # 3. Incoming Ratings (Inverse) - "How many ratings did this movie get?"
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-mov:receivedRating ;
+        davi-meta:uiLabel "Popularity (Ratings Count)" ;
+        davi-meta:sparqlPath "^schema:itemReviewed" 
+    ] ;
+
+    # 4. Incoming Tags (Inverse) - "How many tags did this movie get?"
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-mov:receivedTag ;
+        davi-meta:uiLabel "Discussion (Tags Count)" ;
+        davi-meta:sparqlPath "^davi-mov:tagsMovie" 
+    ] ;
+
     davi-meta:supportsVisualization davi-meta:viz_filtering_movielens, davi-meta:viz_trends_movielens .
 
 # --- MOVIELENS VIEW 2: RATINGS ---
@@ -247,15 +322,14 @@ davi-meta:view_movielens_ratings a davi-meta:DataView ;
     davi-meta:targetClass schema:Rating ;
     davi-meta:exampleResource <https://purl.org/davi/vocab/movielens#rating_1_2> ;
     
-    # Configured Dimension for Date
     davi-meta:hasDimension [
         davi-meta:dimensionProperty schema:datePublished ;
-        davi-meta:uiLabel "Rating Date" ;   # <--- Context specific label
+        davi-meta:uiLabel "Rating Date" ;
         davi-meta:visualizationType "Temporal"
     ] ;
-    
-    # Simple Dimensions
     davi-meta:hasDimension schema:ratingValue ; 
+    davi-meta:hasDimension schema:itemReviewed ;
+
     davi-meta:hasMetric schema:ratingValue ; 
     
     davi-meta:supportsVisualization davi-meta:viz_trends_ratings .
@@ -266,8 +340,8 @@ davi-meta:view_movielens_tags a davi-meta:DataView ;
     davi-meta:targetClass davi-mov:TagApplication ;
     davi-meta:exampleResource <https://purl.org/davi/vocab/movielens#tagapp_18_4141_1240597180> ;
     
-    davi-meta:hasDimension davi-mov:tagContent, schema:startTime ;
-    davi-meta:supportsVisualization davi-meta:viz_filtering_generic .
+    davi-meta:hasDimension davi-mov:tagContent, schema:startTime, davi-mov:tagsMovie ;
+    davi-meta:supportsVisualization davi-meta:viz_analysis_tags .
 
 # --- MOVIELENS VIEW 4: GENOME DEFINITIONS ---
 davi-meta:view_movielens_genomedefs a davi-meta:DataView ;
@@ -276,7 +350,15 @@ davi-meta:view_movielens_genomedefs a davi-meta:DataView ;
     davi-meta:exampleResource <https://purl.org/davi/vocab/movielens#genometag_1> ;
     
     davi-meta:hasDimension rdfs:label ;
-    davi-meta:supportsVisualization davi-meta:viz_filtering_generic .
+    
+    # Analyze by Usage (Inverse: Tag <- GenomeRelevance)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-mov:usedInGenome ;
+        davi-meta:uiLabel "Usage Frequency" ;
+        davi-meta:sparqlPath "^davi-mov:hasGenomeTag"
+    ] ;
+    
+    davi-meta:supportsVisualization davi-meta:viz_trends_genomedefs .
 
 # --- MOVIELENS VIEW 5: GENOME SCORES ---
 davi-meta:view_movielens_genomescores a davi-meta:DataView ;
@@ -284,22 +366,27 @@ davi-meta:view_movielens_genomescores a davi-meta:DataView ;
     davi-meta:targetClass davi-mov:GenomeRelevance ;
     davi-meta:exampleResource <https://purl.org/davi/vocab/movielens#relevance_1_11> ;
     
-    davi-meta:hasDimension davi-mov:hasGenomeTag ;
-    davi-meta:hasMetric davi-mov:relevanceScore ;
+    davi-meta:hasDimension davi-mov:hasGenomeTag, davi-mov:isRelevantTo ;
+    davi-meta:hasMetric davi-mov:relevanceScore ; 
     
-    davi-meta:supportsVisualization davi-meta:viz_network_movielens .
+    davi-meta:supportsVisualization davi-meta:viz_network_movielens, davi-meta:viz_trends_genomescores .
 
-# --- MOVIELENS VIEW 6: USERS (NEW) ---
+# --- MOVIELENS VIEW 6: USERS ---
 davi-meta:view_movielens_users a davi-meta:DataView ;
     davi-meta:uiLabel "Users" ;
     davi-meta:targetClass schema:Person ;
     davi-meta:exampleResource <https://purl.org/davi/vocab/movielens#user_1> ;
     
-    # Even without robust properties, "Label" allows searching for users
     davi-meta:hasDimension rdfs:label ;
+
+    # Analyze by Ratings Given (Inverse: User <- Rating)
+    davi-meta:hasDimension [
+        davi-meta:dimensionProperty davi-mov:generatedRating ;
+        davi-meta:uiLabel "Activity (Ratings Given)" ;
+        davi-meta:sparqlPath "^schema:author"
+    ] ;
     
-    # Enables the "Object Browser" to list and filter users
-    davi-meta:supportsVisualization davi-meta:viz_filtering_generic .
+    davi-meta:supportsVisualization davi-meta:viz_trends_users .
 
 
 # ==============================================================================
@@ -307,17 +394,51 @@ davi-meta:view_movielens_users a davi-meta:DataView ;
 # ==============================================================================
 
 # --- NIST Visualizations ---
-davi-meta:viz_filtering_nist a davi-meta:Visualization ;
+
+davi-meta:viz_filtering_cve a davi-meta:Visualization ;
     davi-meta:uiLabel "Filter Vulnerabilities" ;
+    # Removed "By Vendor" from here as requested
     davi-meta:hasOption 
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "By Vendor" ; davi-meta:targetProperty schema:manufacturer ],
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "By Weakness" ; davi-meta:targetProperty davi-nist:hasWeakness ] .
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "By Weakness Type" ; davi-meta:targetProperty davi-nist:hasWeakness ] .
+
+davi-meta:viz_filtering_cpe a davi-meta:Visualization ;
+    davi-meta:uiLabel "Filter Software" ;
+    # Moved "By Vendor" here
+    davi-meta:hasOption 
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Software by Vendor" ; davi-meta:targetProperty schema:manufacturer ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "By Product Name" ; davi-meta:targetProperty schema:name ] .
 
 davi-meta:viz_trends_nist a davi-meta:Visualization ;
     davi-meta:uiLabel "Vulnerability Trends" ;
     davi-meta:hasOption 
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Timeline" ; davi-meta:targetProperty schema:datePublished ],
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Severity Dist." ; davi-meta:targetProperty davi-nist:baseScore ] .
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Publication Timeline" ; davi-meta:targetProperty schema:datePublished ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Modification Timeline" ; davi-meta:targetProperty schema:dateModified ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Affected Software" ; davi-meta:targetProperty davi-nist:affectsSoftware ] .
+
+davi-meta:viz_trends_cwe a davi-meta:Visualization ;
+    davi-meta:uiLabel "Weakness Analytics" ;
+    davi-meta:hasOption 
+        # NEW:
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Associated CAPEC Patterns" ; davi-meta:targetProperty skos:related ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Exploited Weaknesses" ; davi-meta:targetProperty davi-nist:relatedCVEs ] .
+
+davi-meta:viz_trends_software a davi-meta:Visualization ;
+    davi-meta:uiLabel "Software Analytics" ;
+    davi-meta:hasOption 
+        # NEW:
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Vulnerable Products" ; davi-meta:targetProperty davi-nist:affectedByVulnerability ] .
+
+davi-meta:viz_trends_metrics a davi-meta:Visualization ;
+    davi-meta:uiLabel "Metric Analytics" ;
+    davi-meta:hasOption 
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Severity Score Distribution" ; davi-meta:targetProperty davi-nist:baseScore ],
+        # NEW:
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "CVSS Version Distribution" ; davi-meta:targetProperty dcterms:conformsTo ] .
+
+davi-meta:viz_trends_vendors a davi-meta:Visualization ;
+    davi-meta:uiLabel "Vendor Analytics" ;
+    davi-meta:hasOption 
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Largest Portfolios (Product Count)" ; davi-meta:targetProperty davi-nist:manufacturesSoftware ] .
 
 davi-meta:viz_hierarchy_nist a davi-meta:Visualization ;
     davi-meta:uiLabel "Weakness Hierarchy" ;
@@ -325,22 +446,49 @@ davi-meta:viz_hierarchy_nist a davi-meta:Visualization ;
         [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Tree View" ; davi-meta:targetProperty skos:broader ] .
 
 # --- MovieLens Visualizations ---
+
 davi-meta:viz_filtering_movielens a davi-meta:Visualization ;
     davi-meta:uiLabel "Filter Movies" ;
     davi-meta:hasOption 
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "By Genre" ; davi-meta:targetProperty schema:genre ] .
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Movies by Genre" ; davi-meta:targetProperty schema:genre ] .
 
 davi-meta:viz_trends_movielens a davi-meta:Visualization ;
     davi-meta:uiLabel "Movie Trends" ;
     davi-meta:hasOption 
         [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Release Timeline" ; davi-meta:targetProperty schema:datePublished ],
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Rating Dist." ; davi-meta:targetProperty schema:ratingValue ] .
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Popular (Ratings)" ; davi-meta:targetProperty davi-mov:receivedRating ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Discussed (Tags)" ; davi-meta:targetProperty davi-mov:receivedTag ] .
 
 davi-meta:viz_trends_ratings a davi-meta:Visualization ;
     davi-meta:uiLabel "Rating Analytics" ;
     davi-meta:hasOption 
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Activity Timeline" ; davi-meta:targetProperty schema:datePublished ],
-        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Score Distribution" ; davi-meta:targetProperty schema:ratingValue ] .
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Rating Activity Timeline" ; davi-meta:targetProperty schema:datePublished ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Score Distribution" ; davi-meta:targetProperty schema:ratingValue ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Rated Movies" ; davi-meta:targetProperty schema:itemReviewed ] .
+
+davi-meta:viz_trends_genomescores a davi-meta:Visualization ;
+    davi-meta:uiLabel "Relevance Distribution" ;
+    davi-meta:hasOption 
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Movies with Strongest Genome" ; davi-meta:targetProperty davi-mov:isRelevantTo ] .
+
+davi-meta:viz_trends_genomedefs a davi-meta:Visualization ;
+    davi-meta:uiLabel "Vocabulary Stats" ;
+    davi-meta:hasOption
+        # NEW: Uses the inverse property to show which tags appear most often
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Frequent Genome Tags" ; davi-meta:targetProperty davi-mov:usedInGenome ] .
+
+davi-meta:viz_trends_users a davi-meta:Visualization ;
+    davi-meta:uiLabel "User Activity" ;
+    davi-meta:hasOption 
+        # NEW: Uses the inverse property
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Active Users" ; davi-meta:targetProperty davi-mov:generatedRating ] .
+
+davi-meta:viz_analysis_tags a davi-meta:Visualization ;
+    davi-meta:uiLabel "Tag Analysis" ;
+    davi-meta:hasOption 
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Common Tags" ; davi-meta:targetProperty davi-mov:tagContent ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Tagging Timeline" ; davi-meta:targetProperty schema:startTime ],
+        [ a davi-meta:VisualizationOption ; davi-meta:uiLabel "Most Tagged Movies" ; davi-meta:targetProperty davi-mov:tagsMovie ] .
 
 davi-meta:viz_network_movielens a davi-meta:Visualization ;
     davi-meta:uiLabel "Network Explorer" ;

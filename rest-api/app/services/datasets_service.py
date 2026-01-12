@@ -96,21 +96,35 @@ def _get_view_analytics_config(view_uri: str):
     for r in rows:
         prop_uri = unpack_sparql_row(r, "prop")
         p_type = unpack_sparql_row(r, "type")
+
+        # --- NEW LOGIC: Use Path Override if available ---
+        # If sparqlPath is present (e.g. "^schema:author"), use that as the ID.
+        # Otherwise, use the URI.
+        path_override = unpack_sparql_row(r, "sparqlPath")
+        final_id = path_override if path_override else prop_uri
+        # -------------------------------------------------
+
         target_map = dims_map if p_type == "dimension" else metrics_map
 
-        if prop_uri not in target_map:
-            target_map[prop_uri] = AnalyzableProperty(
-                uri=prop_uri,
-                label=unpack_sparql_row(r, "propLabel", prop_uri.split("#")[-1]),
+        # Use final_id as the key to ensure we don't duplicate
+        if final_id not in target_map:
+            default_label = prop_uri.split("#")[-1].split("/")[-1]
+
+            target_map[final_id] = AnalyzableProperty(
+                uri=final_id,  # Frontend will now send "^schema:author" instead of the URI
+                label=unpack_sparql_row(r, "propLabel", default_label),
                 type=p_type,
                 visualization_type=unpack_sparql_row(r, "vizType", "Categorical"),
-                default_aggregation=unpack_sparql_row(r, "aggDefault"),
+                default_aggregation=unpack_sparql_row(r, "aggDefault", "COUNT"),
                 allowed_aggregations=[]
             )
 
         agg_val = unpack_sparql_row(r, "aggAllowed")
-        if agg_val and agg_val not in target_map[prop_uri].allowed_aggregations:
-            target_map[prop_uri].allowed_aggregations.append(agg_val)
+        if agg_val:
+            for a in agg_val.split(","):
+                clean_a = a.strip()
+                if clean_a not in target_map[final_id].allowed_aggregations:
+                    target_map[final_id].allowed_aggregations.append(clean_a)
 
     return list(dims_map.values()), list(metrics_map.values())
 
@@ -131,10 +145,17 @@ def _get_view_visualizations(view_uri: str) -> list[VisualizationModule]:
 
         opt_id = unpack_sparql_row(r, "opt")
         if opt_id:
+            # --- FIX: Use Path Override if available ---
+            prop_uri = unpack_sparql_row(r, "targetProp")
+            path_override = unpack_sparql_row(r, "sparqlPath")
+
+            final_property = path_override if path_override else prop_uri
+            # -------------------------------------------
+
             modules_map[viz_uri].options.append(VisualizationOption(
                 id=opt_id,
                 label=unpack_sparql_row(r, "optLabel"),
-                target_property=unpack_sparql_row(r, "targetProp")
+                target_property=final_property  # Now sends "^schema:author" to frontend
             ))
 
     return list(modules_map.values())
