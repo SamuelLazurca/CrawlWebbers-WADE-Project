@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>DaVi Project - Scholarly Technical Report</title>
+  <link rel="stylesheet" href="css/scholarly.min.css">
+  <script src="js/scholarly.min.js"></script>
+</head>
+
+<body prefix="schema: http://schema.org sa: https://ns.science.ai/">
+  <header>
+    <div class="banner">
+      <div class="status">WADe Project Report</div>
+    </div>
+    <h1>DaVi: Ontology-Driven Semantic Data Visualization System</h1>
+  </header>
+
+  <div role="contentinfo">
+    <dl>
+      <dt>Authors</dt>
+      <dd typeof="schema:Person">
+        <span property="schema:name">Nastasiu Stefan</span>
+      </dd>
+      <dd typeof="schema:Person">
+        <span property="schema:name">Lazurca Samuel-Ionut</span>
+      </dd>
+      <dt>License</dt>
+      <dd>
+        <a href="http://creativecommons.org/licenses/by/4.0/" property="schema:license">CC-BY 4.0</a>
+      </dd>
+      <dt>Repository</dt>
+      <dd>
+        <a href="https://github.com/SamuelLazurca/CrawlWebbers-WADE-Project">GitHub Repository</a>
+      </dd>
+    </dl>
+  </div>
+
+
+  <section typeof="sa:Abstract" id="abstract" role="doc-abstract">
+    <h2>1. Abstract</h2>
+    <p>
+      The DaVi (Data Visualization) project presents a web application designed to integrate,
+      semantically enrich, and visualize heterogeneous datasets through Semantic Web technologies. Focusing on
+      cybersecurity (NIST NVD) and media recommendation (MovieLens) domains, the system transforms raw JSON/CSV data
+      into Resource Description Framework (RDF) graphs, stored in an Apache Jena Fuseki triplestore.
+      A key innovation of DaVi is its <strong> modular, ontology-driven architecture</strong>: the frontend
+      does not contain hardcoded logic for visualizations but instead queries the ontology to dynamically render
+      components based on the semantic definition of data views.
+      This report details the system's architecture, the custom knowledge models employed, the implementation of
+      inverse
+      relations for efficient querying, and the use of Lucene indexing for high-performance text search.
+    </p>
+  </section>
+
+  <section id="introduction" role="doc-introduction">
+    <h2>2. Introduction</h2>
+    <p>
+      In the context of the Web of Data, the separation between data storage and data presentation often leads to
+      rigid
+      systems that require significant refactoring when underlying data models change. DaVi addresses this by adhering
+      to
+      <strong>Linked Data principles</strong>, ensuring that all resources are identified by URIs and accessible via
+      standard web protocols.
+    </p>
+    <p>
+      The project aims to provide a unified exploration interface for two distinct domains: software vulnerabilities
+      (CVE, CWE, CPE)
+      and movie recommendations. By leveraging a custom ontology hosted via <strong>purl.org</strong>, the system
+      unifies these
+      domains under a common visualization metamodel. The solution is deployed using a cloud-native approach,
+      utilizing Google Cloud Platform
+      for backend services and Vercel for frontend delivery, fulfilling the requirements for a modern, scalable Web
+      Engineering project.
+    </p>
+  </section>
+
+  <section id="project-data">
+    <h2>3. Internal Data Structures & Knowledge Models</h2>
+    <p>
+      The core of DaVi is its data. We utilize large-scale datasets retrieved from
+      <strong>AcademicTorrents.com</strong>
+      to ensure reproducibility and access to persistent research data.
+    </p>
+
+    <section id="data-sources">
+      <h3>3.1. External Data Sources</h3>
+      <ul>
+        <li><strong>NIST National Vulnerability Database (<a role="doc-biblioref">NIST</a>):</strong> Contains over
+          25,000 records of Common
+          Vulnerabilities and Exposures (CVE),
+          Common Weakness Enumerations (CWE), and Common Platform Enumerations (CPE).</li>
+        <li><strong>MovieLens 20M (<a role="doc-biblioref">MVLN</a>):</strong> A stable benchmark dataset containing 20
+          million ratings, 465,000 tag
+          applications, and
+          genome scores describing movie attributes.</li>
+      </ul>
+    </section>
+
+    <section id="ontology-design">
+      <h3>3.2. Ontology and Vocabulary Design</h3>
+      <p>
+        To manage this data, we developed a custom ontology suite, accessible via persistent URLs (PURL).
+        The ontology is divided into three modules:
+      </p>
+      <ol>
+        <li><strong>DaVi Meta-Ontology (<code>davi-meta</code>):</strong> Defines the visualization logic. It
+          introduces concepts like
+          <code>davi-meta:DataView</code>, <code>davi-meta:VisualizationOption</code>, and properties like
+          <code>davi-meta:sparqlPath</code>.
+          This layer allows the frontend to be agnostic of the domain data.
+        </li>
+        <li><strong>NIST Domain Ontology (<code>davi-nist</code>):</strong> Maps the NVD JSON structure to RDF,
+          linking Vulnerabilities to Weaknesses and Software. It introduces concepts like
+          <code>davi-nist:Vulnerability</code>, <code>davi-nist:Weakness</code>, and properties such as
+          <code>davi-nist:affectsSoftware</code>.
+        </li>
+        <li><strong>MovieLens Domain Ontology (<code>davi-mov</code>):</strong> Models movies, users, ratings, and tag
+          genomes. It introduces concepts like <code>davi-mov:GenomeTag</code> and properties like
+          <code>davi-mov:relevanceScore</code>.
+      </ol>
+
+      <div class="note">
+        <strong>Key Architectural Decision: Inverse Relations</strong><br>
+        To optimize graph traversal, the ontology explicitly defines inverse properties using
+        <code>owl:inverseOf</code> logic and SPARQL paths.
+        For instance, while the raw data links a <em>Vulnerability</em> to <em>Software</em>
+        (<code>davi-nist:affectsSoftware</code>),
+        the ontology defines an inverse view property <code>davi-nist:affectedByVulnerability</code> with the path
+        <code>^davi-nist:affectsSoftware</code>.
+        This allows the system to instantly query "Which software is most vulnerable?" without expensive SPARQL joins,
+        simply by following the inverse path.
+      </div>
+    </section>
+
+    <section id="rdf-transformation">
+      <h3>3.3. RDF Transformation Pipelines</h3>
+      <p>
+        We developed a suite of Python-based ETL (Extract, Transform, Load) scripts to convert the raw data into
+        Turtle (TTL) format.
+        These scripts sanitize URIs, map dates to <code>xsd:date</code>, and link entities to the custom ontology.
+      </p>
+      <ul>
+        <li><code>cve_parser.py</code>: Extracts CVE details like names, descriptions, weaknesses, and references.
+          Also extracts nested JSON metrics (CVSS scores) and creates
+          <code>davi-nist:CVSSMetric</code> nodes. It uses batch processing to handle large datasets efficiently.
+        </li>
+        <figure typeof="schema:SoftwareSourceCode">
+          <pre>
+              <code>
+  # CVE parser output example snippet
+  cve:CVE-2000-1208 a davi-nist:Vulnerability ;
+  schema:name "CVE-2000-1208" ;
+    dcterms:identifier "CVE-2000-1208" ;
+    schema:creativeWorkStatus "Deferred" ;
+    schema:dateModified "2025-04-03T01:03:51.193000"^^xsd:dateTime ;
+  schema:datePublished "2002-08-12T04:00:00"^^xsd:dateTime ;
+    schema:description "Format string vulnerability in startprinting() function of printjob.c in BSD-based..."@en ;
+    davi-nist:affectsSoftware cpe:5ECDDE72-C03D-40E5-955F-168E10AD8F57,
+        cpe:85A510C4-D66B-4AEA-876E-ACA639D8F6E4,
+        cpe:CCC8529F-6BD1-4B01-BA9E-803ADFFEC05A,
+        cpe:DD14A51A-1312-4D78-AE17-0233EB5C44FE,
+        cpe:DFD3469F-CB35-451B-82F1-607AEEB3CA1C,
+        cpe:F777EFC8-241B-449F-BA4A-E55B4B90C1FC ;
+    davi-nist:hasCVSSMetric davi-nist:metric_CVE-2000-1208_v2 .
+              </code>
+            </pre>
+          <figcaption>Figure 1: A CVE entry representing a software vulnerability with linked software and metrics.
+        </figure>
+        <li><code>cpe_parser.py</code>: Processes CPE entries and their vendors. Saves a map of CPE names to ids
+          to link vulnerabilities to affected software in the CVE parser.</li>
+        <figure typeof="schema:SoftwareSourceCode">
+          <pre>
+              <code>
+  # CPE parser output example snippet
+  cpe:000007A8-79E3-4DF7-A00E-326188269361 a schema:SoftwareApplication ;
+    rdfs:label "AG-Grid 19.1.3"@en ;
+    dcterms:identifier "000007A8-79E3-4DF7-A00E-326188269361" ;
+    schema:manufacturer vendor:ag-grid ;
+    schema:name "ag-grid" ;
+    schema:softwareVersion "19.1.3" ;
+    davi-nist:cpe23 "cpe:2.3:a:ag-grid:ag-grid:19.1.3:*:*:*:*:*:*:*" .
+              </code>
+            </pre>
+          <figcaption>Figure 2: A CPE entry representing a software application with vendor linkage.
+          </figcaption>
+        </figure>
+        <li><code>cwe_parser.py</code>: Parses CWE entries, extracting hierarchical relationships using
+          <code>skos:broader</code> and <code>skos:narrower</code> properties. It builds a comprehensive weakness
+          taxonomy using rdflib to create the RDF graph.
+        </li>
+        <figure typeof="schema:SoftwareSourceCode">
+          <pre>
+              <code>
+  # CWE parser output example snippet
+  cwe:1004 a skos:Concept,
+        davi-nist:Weakness ;
+    dcterms:identifier "CWE-1004" ;
+    schema:description "The product uses a cookie to store sensitive information, but the cookie is not marked with the HttpOnly flag."@en ;
+    skos:broader cwe:732 ;
+    skos:prefLabel "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"@en .
+              </code>
+            </pre>
+          <figcaption>Figure 3: A CWE entry representing a software weakness with hierarchical relationships.
+          </figcaption>
+        </figure>
+        <li><code>convert_movies_final.py</code>: Transforms CSVs about movies, users, ratings, and tag genomes into
+          RDF, handling the massive volume of Rating
+          objects
+          by batching triples (<a role="doc-biblioref">schema.org</a>)..</li>
+        <figure typeof="schema:SoftwareSourceCode">
+          <pre>
+                <code>
+  # MovieLens parser output example snippet
+  imdb:0114709 a schema:Movie ;
+    schema:name "Toy Story (1995)" ;
+    dcterms:identifier "1" ;
+    schema:datePublished "1995-01-01"^^xsd:date ;
+    schema:genre genre:adventure, genre:animation, genre:family, genre:comedy, genre:fantasy ;
+    .
+                </code>
+              </pre>
+          <figcaption>Figure 4: A MovieLens entry representing a movie with genres and identifiers.
+          </figcaption>
+        </figure>
+      </ul>
+    </section>
+  </section>
+
+  <section id="architecture">
+    <h2>4. System Architecture</h2>
+    <p>
+      DaVi adopts a multi-layered architecture, strictly separating the data layer, the semantic mediation
+      layer (API), and the presentation layer.
+    </p>
+
+    <figure class="architecture-diagram">
+
+      <img src="DaVi-C4-diagram.jpg" width="600" height="600" alt="C4 Diagram of DaVi System Architecture">
+      <figcaption>Figure 5: C4 Diagram illustrating the multi-layered architecture of the DaVi system.
+      </figcaption>
+    </figure>
+
+    <section id="backend-store">
+      <h3>4.1. Semantic Data Store: Apache Jena Fuseki</h3>
+      <p>
+        The persistence layer is powered by <strong>Apache Jena Fuseki</strong>. We utilize the <strong>TDB2</strong>
+        storage engine for high-performance triple storage. In hope for efficient text search, we
+        configured a
+        <strong>Lucene Text Index</strong>.
+      </p>
+      <p>
+        <strong>Lucene Integration:</strong> Standard SPARQL <code>FILTER regex()</code> operations are
+        computationally expensive (O(n)).
+        By defining a <code>text:EntityMap</code> in the Fuseki configuration, we index properties like
+        <code>schema:description</code> and <code>davi-mov:tagContent</code>.
+        This allows the backend to use <code>text:query</code> for sub-millisecond keyword searches, essential for the
+        "Intelligent Filter" feature.
+      </p>
+      <p>
+        <strong>Statistics Computation</strong> is performed using <strong>tdbstats</strong> command-line tool to
+        precompute graph
+        statistics, enabling efficient query planning.
+      </p>
+      <p>Unfortunately, having a big dataset poses challenges for indexing and query performance. Applications like
+        DbPedia and Wikidata have bigger resources and more mature infrastructures, so in order for us to have a
+        decent latency,
+        we had to limit the dataset size drastically during development and testing phases.</p>
+    </section>
+
+    <section id="backend-api">
+      <h3>4.2. Semantic Mediation Layer: FastAPI</h3>
+      <p>
+        The backend is developed using <strong>Python FastAPI</strong>. It acts as a semantic mediator, translating
+        RESTful requests
+        into SPARQL queries. It exposes an OpenAPI specification (Swagger UI) for easy consumption.
+      </p>
+      <p> It is organized into routers that call service functions that implement the core business logic.</p>
+      <p>
+        <strong>Complex Query Optimization:</strong>
+        The API implements intelligent query builders that inspect the request structure. If a user filters by a
+        textual field,
+        the builder injects the <code>text:query</code> predicate. If the filter implies a hierarchy (e.g., "Find all
+        weaknesses related to X"),
+        it utilizes SPARQL 1.1 Property Paths (e.g., <code>skos:broader*</code>) to perform recursive transitive
+        closures over the graph.
+      </p>
+      <p>
+        We tried to make the API seem more "intelligent" by making the functions generic enough to handle multiple
+        datasets and views.
+      </p>
+    </section>
+
+    <section id="frontend-spa">
+      <h3>4.3. The Frontend Architecture</h3>
+      <p>
+        The frontend is a Single Page Application (SPA) built with <strong>React</strong>, <strong>Vite</strong>, and
+        <strong>TypeScript</strong>.
+        Unlike traditional dashboards, the DaVi frontend is <strong>data-agnostic</strong>.
+      </p>
+      <p>It dynamically constructs the UI based on the ontology definitions retrieved at runtime. Tabs and dashboard
+        panels are
+        not using routes but are conditionally rendered components based on the selected dataset and view.</p>
+      <p>
+        <strong>Ontology-Driven UI:</strong> When a user selects a dataset (e.g., NIST), the frontend queries the
+        ontology for available <code>davi-meta:DataView</code>s.
+        It inspects the <code>davi-meta:supportsVisualization</code> properties to determine which components to
+        render.
+        For example, if the ontology asserts that the <em>Publication Date</em> property supports
+        <code>davi-meta:viz_timeline</code>,
+        the frontend automatically instantiates a Line Chart component. This "Perfect Modularity" allows us to add new
+        datasets (e.g., Biology or Finance)
+        simply by updating the ontology, without deploying new frontend code.
+      </p>
+      <ul>
+        <li><strong>GraphExplorer:</strong> A force-directed graph visualization component (using
+          <code>react-force-graph</code>) that allows users to traverse the RDF network interactively.
+          Users can view the graph in 2D or 3D, zoom into nodes, and inspect properties.
+          Clicking on a node fetches more related nodes so the graph can expand dynamically and the user can explore
+          the data.
+          Groups of nodes can be color-coded based on their RDF types for better visual distinction (e.g.,
+          Vulnerabilities vs. Software).
+        </li>
+        <li><strong>Analytics Builder:</strong> Generates filter inputs based on the
+          <code>davi-meta:isDimension</code>
+          properties of the current view. The user can choose dimensions to filter and aggregate data dynamically.
+        </li>
+        <li><strong>Filter Panel:</strong> Provides a user interface for applying multiple filters to the dataset,
+          enhancing data exploration capabilities. This time in list form, allowing for complex boolean logic
+          combinations.
+        </li>
+      </ul>
+    </section>
+  </section>
+
+  <section id="api-implementation">
+    <h2>5. Linked Data</h2>
+
+    <section id="sparql-integration">
+      <h3>5.1. SPARQL & Linked Data Conformity</h3>
+      <p>
+        Every resource is identified by a dereferenceable URI.
+        We use PURLs to ensure persistent access to ontology definitions and we tried to
+        use as many known vocabularies as possible (Schema.org, Dublin Core, SKOS, OWL) and to use real links for
+        subjects and objects as much as possible.
+      </p>
+      <p>
+        The backend API transforms RESTful requests into SPARQL queries, adhering to Linked Data principles (<a
+          role="doc-biblioref">WADE</a>).
+        For example, to retrieve all vulnerabilities affecting a specific software, the API constructs a SPARQL query
+        that navigates the RDF graph using the defined properties.
+      </p>
+      <figure typeof="schema:SoftwareSourceCode">
+        <pre><code>
+# Parameterized SPARQL Query Template for Advanced Analytics
+SELECT ?groupKey {selection}
+    WHERE {{
+        {class_filter}
+        ?s {dim_pred} ?dimVal .
+
+        # Dynamic Label Resolution for the Group Key
+        OPTIONAL {{ {group_node} rdfs:label | schema:name | skos:prefLabel ?lbl }}
+        BIND(COALESCE(STR(?lbl), STR({group_node})) as ?groupKey)
+
+        {metric_pattern}
+        {"FILTER(BOUND(?metricRaw))" if metric else ""}
+    }}
+    GROUP BY ?groupKey
+    ORDER BY DESC(?val)
+    LIMIT {limit}
+          </code></pre>
+        <figcaption>Figure 2: A backend query demonstrating dynamic SPARQL construction based on user-selected
+          dimensions and metrics.
+      </figure>
+    </section>
+  </section>
+
+  <section id="deployment">
+    <h2>6. Deployment</h2>
+    <p>
+      The deployment strategy follows a cloud-native approach, ensuring scalability and availability.
+    </p>
+
+    <section id="cloud-infrastructure">
+      <h3>6.1. Backend & Triplestore (Google Cloud Platform)</h3>
+      <p>
+        The FastAPI application is containerized using Docker and deployed on
+        <strong>Google Cloud Platform (<a role="doc-biblioref">GCP</a>)</strong>
+        using Cloud Run. This provides a serverless environment that auto-scales based on traffic.
+        The Apache Jena Fuseki triplestore is hosted on a Compute Engine VM with 4 vCPUs and 16GB RAM to handle the
+        RDF dataset.
+      </p>
+    </section>
+
+    <section id="frontend-hosting">
+      <h3>6.2. Frontend (Vercel)</h3>
+      <p>
+        The React SPA is deployed via <strong>Vercel</strong>.
+        The communication between the frontend and backend is secured using HTTPS, CORS and also it is API key-based.
+      </p>
+    </section>
+  </section>
+</body>
+
+</html>
