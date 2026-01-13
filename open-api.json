@@ -1,0 +1,1347 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DaVi API",
+    "description": "OWL + SKOS powered API",
+    "version": "3.0.0"
+  },
+  "paths": {
+    "/api/v1/filter/advanced": {
+      "post": {
+        "tags": [
+          "Filtering"
+        ],
+        "summary": "Intelligent Search",
+        "description": "**Intelligent Filtering Extension**\n\nPerform multi-faceted semantic search leveraging ontology hierarchy, graph traversal, and inverse relations.\n\n**View Context:**\nThis endpoint works in the context of a specific **Data View**.\nThe `target_class` parameter should match the `target_class` of the View you are querying\n(e.g., `https://purl.org/davi/vocab/nist#Vulnerability`).\n\n**Supported Operators:**\n- Comparison: `=`, `!=`, `\u003E`, `\u003C`\n- String: `CONTAINS`, `NOT_CONTAINS` (Case-insensitive)\n- Semantic: `TRANSITIVE` (Finds all children of a concept using `skos:broader` or `rdfs:subClassOf`)",
+        "operationId": "intelligent_search_api_v1_filter_advanced_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilterRequest",
+                "description": "Define facets, ranges, and semantic inference rules."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FilterResultItem"
+                  },
+                  "type": "array",
+                  "title": "Response Intelligent Search Api V1 Filter Advanced Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/trends/distribution": {
+      "get": {
+        "tags": [
+          "Trends"
+        ],
+        "summary": "Get Property Distribution",
+        "description": "**Preset Mode**: Simple distribution counting.\nIf `view_id` is provided, analytics are scoped to that View's target class.",
+        "operationId": "get_property_distribution_api_v1_trends_distribution_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "target_property",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "RDF Property URI",
+              "title": "Target Property"
+            },
+            "description": "RDF Property URI"
+          },
+          {
+            "name": "view_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The View Context (e.g. view_movielens_movies) to isolate data.",
+              "title": "View Id"
+            },
+            "description": "The View Context (e.g. view_movielens_movies) to isolate data."
+          },
+          {
+            "name": "granularity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/GranularityEnum",
+              "default": "none"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/trends/custom": {
+      "get": {
+        "tags": [
+          "Trends"
+        ],
+        "summary": "Get Custom Analytics",
+        "description": "**Custom Builder Mode**: Dynamic aggregation.",
+        "operationId": "get_custom_analytics_api_v1_trends_custom_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dimension",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "X-Axis: Grouping property",
+              "title": "Dimension"
+            },
+            "description": "X-Axis: Grouping property"
+          },
+          {
+            "name": "metric",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Y-Axis: Aggregation property",
+              "title": "Metric"
+            },
+            "description": "Y-Axis: Aggregation property"
+          },
+          {
+            "name": "view_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The View Context to isolate data.",
+              "title": "View Id"
+            },
+            "description": "The View Context to isolate data."
+          },
+          {
+            "name": "aggregation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/AggregationType",
+              "description": "Math operation",
+              "default": "count"
+            },
+            "description": "Math operation"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/compare/": {
+      "get": {
+        "tags": [
+          "Compare"
+        ],
+        "summary": "Compare Resources",
+        "description": "**Compare Extension**\n\nPerforms a side-by-side comparison of two RDF resources.\n\n**View Awareness:**\nIf `view_id` is provided, the comparison will use the specific labels defined\nin that View (e.g., showing 'Release Year' instead of generic 'Date').",
+        "operationId": "compare_resources_api_v1_compare__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "uri_a",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Full URI of the first resource",
+              "title": "Uri A"
+            },
+            "description": "Full URI of the first resource"
+          },
+          {
+            "name": "uri_b",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Full URI of the second resource",
+              "title": "Uri B"
+            },
+            "description": "Full URI of the second resource"
+          },
+          {
+            "name": "view_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional: The View URI (e.g., view_movielens_movies) to use for label overrides.",
+              "title": "View Id"
+            },
+            "description": "Optional: The View URI (e.g., view_movielens_movies) to use for label overrides."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ComparisonResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/layers/tree": {
+      "get": {
+        "tags": [
+          "Layers"
+        ],
+        "summary": "Get Hierarchical View",
+        "description": "**Hierarchical View Extension**\nFetches a tree structure for visualization.\n\n- **View Awareness:** If `view_id` is provided, the query restricts nodes to the View's `target_class`.\n- **Modularity:** Works for any hierarchy (CWE, SKOS taxonomies, Organization charts) defined in the ontology.",
+        "operationId": "get_hierarchical_view_api_v1_layers_tree_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "child_property",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The predicate connecting parent to child (e.g., skos:narrower).",
+              "title": "Child Property"
+            },
+            "description": "The predicate connecting parent to child (e.g., skos:narrower)."
+          },
+          {
+            "name": "view_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The View Context (e.g. view_nist_cwe) to isolate the hierarchy.",
+              "title": "View Id"
+            },
+            "description": "The View Context (e.g. view_nist_cwe) to isolate the hierarchy."
+          },
+          {
+            "name": "root_node",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The root concept URI. If None, finds top-level concepts.",
+              "title": "Root Node"
+            },
+            "description": "The root concept URI. If None, finds top-level concepts."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 100,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/graph/neighborhood": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Graph Neighborhood",
+        "description": "**Graph/Network Extension**\nFetches the immediate neighborhood of a node for Force-Directed or 3D Visualizations.",
+        "operationId": "get_graph_neighborhood_api_v1_graph_neighborhood_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "resource_uri",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "The full URI of the center node",
+              "title": "Resource Uri"
+            },
+            "description": "The full URI of the center node"
+          },
+          {
+            "name": "view_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional: View Context to highlight relevant nodes.",
+              "title": "View Id"
+            },
+            "description": "Optional: View Context to highlight relevant nodes."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GraphResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/datasets/": {
+      "get": {
+        "tags": [
+          "Datasets"
+        ],
+        "summary": "Get Datasets",
+        "operationId": "get_datasets_api_v1_datasets__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ItemsResponseSchema_DatasetSchema_"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/datasets/{dataset_id}": {
+      "get": {
+        "tags": [
+          "Datasets"
+        ],
+        "summary": "Get Dataset By Id",
+        "operationId": "get_dataset_by_id_api_v1_datasets__dataset_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "dataset_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Dataset Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DatasetSchema"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Dataset By Id Api V1 Datasets  Dataset Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AggregationType": {
+        "type": "string",
+        "enum": [
+          "count",
+          "sum",
+          "avg",
+          "max",
+          "min"
+        ],
+        "title": "AggregationType"
+      },
+      "AnalyzableProperty": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "title": "Uri"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "visualization_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Visualization Type",
+            "default": "Categorical"
+          },
+          "default_aggregation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Default Aggregation",
+            "default": "COUNT"
+          },
+          "allowed_aggregations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Allowed Aggregations",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "uri",
+          "label",
+          "type"
+        ],
+        "title": "AnalyzableProperty",
+        "description": "Enhanced to support the new Ontology metadata"
+      },
+      "ComparisonItem": {
+        "properties": {
+          "property_uri": {
+            "type": "string",
+            "title": "Property Uri"
+          },
+          "property_label": {
+            "type": "string",
+            "title": "Property Label"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "value_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value Label"
+          }
+        },
+        "type": "object",
+        "required": [
+          "property_uri",
+          "property_label",
+          "value"
+        ],
+        "title": "ComparisonItem"
+      },
+      "ComparisonResponse": {
+        "properties": {
+          "entity_a": {
+            "type": "string",
+            "title": "Entity A"
+          },
+          "entity_b": {
+            "type": "string",
+            "title": "Entity B"
+          },
+          "common_properties": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonItem"
+            },
+            "type": "array",
+            "title": "Common Properties",
+            "default": []
+          },
+          "unique_to_a": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonItem"
+            },
+            "type": "array",
+            "title": "Unique To A",
+            "default": []
+          },
+          "unique_to_b": {
+            "items": {
+              "$ref": "#/components/schemas/ComparisonItem"
+            },
+            "type": "array",
+            "title": "Unique To B",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "entity_a",
+          "entity_b"
+        ],
+        "title": "ComparisonResponse"
+      },
+      "DataViewSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "target_class": {
+            "type": "string",
+            "title": "Target Class"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Icon",
+            "default": "table"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "example_resource": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Example Resource"
+          },
+          "dimensions": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyzableProperty"
+            },
+            "type": "array",
+            "title": "Dimensions",
+            "default": []
+          },
+          "metrics": {
+            "items": {
+              "$ref": "#/components/schemas/AnalyzableProperty"
+            },
+            "type": "array",
+            "title": "Metrics",
+            "default": []
+          },
+          "supported_visualizations": {
+            "items": {
+              "$ref": "#/components/schemas/VisualizationModule"
+            },
+            "type": "array",
+            "title": "Supported Visualizations",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "target_class"
+        ],
+        "title": "DataViewSchema"
+      },
+      "DatasetSchema": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "size_in_bytes": {
+            "type": "integer",
+            "title": "Size In Bytes"
+          },
+          "number_of_files": {
+            "type": "integer",
+            "title": "Number Of Files"
+          },
+          "number_of_downloads": {
+            "type": "integer",
+            "title": "Number Of Downloads"
+          },
+          "added_date": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Added Date"
+          },
+          "uploaded_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By"
+          },
+          "uploaded_by_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uploaded By Url"
+          },
+          "views": {
+            "items": {
+              "$ref": "#/components/schemas/DataViewSchema"
+            },
+            "type": "array",
+            "title": "Views",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "url",
+          "description",
+          "size_in_bytes",
+          "number_of_files",
+          "number_of_downloads"
+        ],
+        "title": "DatasetSchema"
+      },
+      "FilterCondition": {
+        "properties": {
+          "property_uri": {
+            "type": "string",
+            "title": "Property Uri"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/FilterOperator"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "title": "Value"
+          },
+          "path_to_target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Path To Target"
+          }
+        },
+        "type": "object",
+        "required": [
+          "property_uri",
+          "operator",
+          "value"
+        ],
+        "title": "FilterCondition"
+      },
+      "FilterOperator": {
+        "type": "string",
+        "enum": [
+          "EQ",
+          "NEQ",
+          "GT",
+          "LT",
+          "CONTAINS",
+          "NOT_CONTAINS",
+          "TRANSITIVE"
+        ],
+        "title": "FilterOperator"
+      },
+      "FilterRequest": {
+        "properties": {
+          "target_class": {
+            "type": "string",
+            "title": "Target Class"
+          },
+          "filters": {
+            "items": {
+              "$ref": "#/components/schemas/FilterCondition"
+            },
+            "type": "array",
+            "title": "Filters"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit",
+            "default": 50
+          },
+          "offset": {
+            "type": "integer",
+            "title": "Offset",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "target_class",
+          "filters"
+        ],
+        "title": "FilterRequest"
+      },
+      "FilterResultItem": {
+        "properties": {
+          "uri": {
+            "type": "string",
+            "title": "Uri"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Type"
+          },
+          "matches": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Matches",
+            "default": {
+
+            }
+          }
+        },
+        "type": "object",
+        "required": [
+          "uri",
+          "label"
+        ],
+        "title": "FilterResultItem"
+      },
+      "GranularityEnum": {
+        "type": "string",
+        "enum": [
+          "none",
+          "year",
+          "month",
+          "day"
+        ],
+        "title": "GranularityEnum"
+      },
+      "GraphLink": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "relationship": {
+            "type": "string",
+            "title": "Relationship"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "target",
+          "relationship"
+        ],
+        "title": "GraphLink"
+      },
+      "GraphNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "group": {
+            "type": "string",
+            "title": "Group"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "group"
+        ],
+        "title": "GraphNode"
+      },
+      "GraphResponse": {
+        "properties": {
+          "center_node": {
+            "type": "string",
+            "title": "Center Node"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/GraphNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/GraphLink"
+            },
+            "type": "array",
+            "title": "Links"
+          }
+        },
+        "type": "object",
+        "required": [
+          "center_node",
+          "nodes",
+          "links"
+        ],
+        "title": "GraphResponse"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ItemsResponseSchema_DatasetSchema_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/DatasetSchema"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ItemsResponseSchema[DatasetSchema]"
+      },
+      "TrendPoint": {
+        "properties": {
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "title": "Label"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "label"
+        ],
+        "title": "TrendPoint"
+      },
+      "TrendsResponse": {
+        "properties": {
+          "property": {
+            "type": "string",
+            "title": "Property"
+          },
+          "granularity": {
+            "$ref": "#/components/schemas/GranularityEnum"
+          },
+          "total_records": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Records"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "property",
+          "granularity",
+          "total_records",
+          "data"
+        ],
+        "title": "TrendsResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VisualizationModule": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/VisualizationOption"
+            },
+            "type": "array",
+            "title": "Options",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label"
+        ],
+        "title": "VisualizationModule"
+      },
+      "VisualizationOption": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "target_property": {
+            "type": "string",
+            "title": "Target Property"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "target_property"
+        ],
+        "title": "VisualizationOption"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  }
+}

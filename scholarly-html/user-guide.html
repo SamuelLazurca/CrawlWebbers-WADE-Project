@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DaVi — User Guide (Scholarly)</title>
+  <link rel="stylesheet" href="css/scholarly.min.css">
+  <script src="js/scholarly.min.js"></script>
+  <style>
+    .topic {
+      margin-bottom: 2rem
+    }
+
+    .quick-commands pre {
+      background: #f6f8fa;
+      padding: 1rem;
+      border-radius: 6px;
+      overflow: auto
+    }
+
+    .screenshot {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+      padding: 6px;
+      background: #fff
+    }
+
+    .demo-btn {
+      display: inline-block;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      background: #0b77ff;
+      color: #fff;
+      text-decoration: none
+    }
+
+    .toc li {
+      margin: 6px 0
+    }
+  </style>
+</head>
+
+<body prefix="schema: http://schema.org sa: https://ns.science.ai/">
+  <header>
+    <div class="banner">
+      <div class="status">WADe Project — User Guide</div>
+    </div>
+    <h1>DaVi: Ontology-Driven Semantic Data Visualization — User Guide</h1>
+    <p class="lead">Practical instructions to install, run and use the DaVi system. This document is written in a
+      concise, scholarly style with screenshots and example commands for a quick hands-on experience.</p>
+  </header>
+
+  <nav aria-label="Table of contents">
+    <h2>Contents</h2>
+    <ul class="toc">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#quickstart">Quickstart</a></li>
+      <li><a href="#api-usage">API</a></li>
+      <li><a href="#ui-walkthrough">UI Walkthrough</a></li>
+    </ul>
+  </nav>
+
+  <section id="meta" role="contentinfo">
+    <dl>
+      <dt>Authors</dt>
+      <dd typeof="schema:Person"><span property="schema:name">Nastasiu Stefan</span></dd>
+      <dd typeof="schema:Person"><span property="schema:name">Lazurca Samuel-Ionut</span></dd>
+      <dt>Version</dt>
+      <dd>1.0 — User Guide</dd>
+      <dt>Repository</dt>
+      <dd><a href="https://github.com/SamuelLazurca/CrawlWebbers-WADE-Project">Project repository (source & code)</a>
+      </dd>
+      <dt>Live demo</dt>
+      <dd><a class="demo-btn" href="https://davi-ui.vercel.app/" id="live-demo">Open live demo</a></dd>
+    </dl>
+  </section>
+
+  <section id="overview" class="topic" typeof="sa:Abstract">
+    <h2>Overview</h2>
+    <p>The DaVi system provides a data-agnostic, ontology-driven interface to explore RDF datasets. It supports:</p>
+    <ul>
+      <li>Interactive graph exploration (2D/3D force graphs).</li>
+      <li>Analytics builder with dynamic filters read from the meta-ontology.</li>
+      <li>Customizable queries over RDF data. </li>
+    </ul>
+    <figure>
+      <img class="screenshot" src="dashboard1.png" alt="DaVi overview dashboard screenshot">
+      <figcaption>Figure 1 — DaVi dashboard (presets).</figcaption>
+    </figure>
+  </section>
+
+  <section id="quickstart" class="topic">
+    <h2>Quickstart — run DaVi locally (6 steps)</h2>
+    <p>This quickstart assumes you have <code>git</code>, <code>docker</code> and <code>node</code> installed.</p>
+    <ol>
+      <li>Clone the repository and change directory:
+        <pre><code>git clone https://github.com/SamuelLazurca/CrawlWebbers-WADE-Project.git
+cd CrawlWebbers-WADE-Project</code></pre>
+      </li>
+      <li>Download the apache-jena-fuseki archive and extract it:
+        <pre><code>wget https://archive.apache.org/dist/jena/binaries/apache-jena-fuseki-5.6.0.tar.gz
+tar -xvf apache-jena-fuseki-5.6.0.tar.gz</code></pre>
+      </li>
+      <li>You can load a small RDF sample into Fuseki using the interface at <code>localhost:3030</code> (TTL files from
+        the <code>results/</code> folder):
+
+      </li>
+      <li>
+        Set up the following environment variables in a <code>.env</code> file in the backend folder:
+        <pre><code>
+          FUSEKI_ENDPOINT=http://localhost:3030/davi/sparql
+          API_KEY=your_api_key_here
+          FRONTEND_URL=http://localhost:5173
+</code></pre>
+        Set up the following environment variables in a <code>.env</code> file in the frontend folder:
+        <pre><code>
+          VITE_API_URL=http://localhost:8000/api/v1
+          VITE_API_KEY=your_api_key_here
+</code></pre>
+      </li>
+      <li>Start the backend (FastAPI) in a virtualenv:
+        <pre><code># Python venv approach
+cd rest-api
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn main:app --reload --port 8000
+</code></pre>
+      </li>
+      <li>Start the frontend (React + Vite):
+        <pre><code>cd spa
+npm install
+npm run dev -- --port 5173
+</code></pre>
+      </li>
+      <li>Open the UI: <a href="http://localhost:5173">http://localhost:5173</a> and connect to the backend API at
+        <code>http://localhost:8000</code>.
+      </li>
+    </ol>
+  </section>
+
+  <section id="api-usage" class="topic">
+    <h2>SWAGGER</h2>
+
+    <h3>4.1. How to use swagger</h3>
+    <p>The backend API is documented using OpenAPI (Swagger). You can access the interactive documentation at
+      <code>http://localhost:8000/docs</code>. Here you can test endpoints directly from the browser.
+    </p>
+  </section>
+
+  <section id="ui-walkthrough" class="topic">
+    <h2>UI Walkthrough</h2>
+    <p>This section explains the main panels and their common interactions.</p>
+    <ol>
+      <li><strong>Dataset selector</strong> — choose a dataset</li>
+      <figure>
+        <img class="screenshot" src="sidebar.png" alt="DaVi overview dashboard screenshot">
+        <figcaption>Figure 2 — Sidebar.</figcaption>
+      </figure>
+      <li><strong>Analytics Builder</strong> — dynamically generated controls based on the
+        <code>davi-meta</code> ontology.
+      </li>
+      <figure>
+        <img class="screenshot" src="analytics.png" alt="DaVi overview dashboard screenshot">
+        <figcaption>Figure 3 — Analytics Builder.</figcaption>
+      </figure>
+      <li><strong>Graph</strong> — expand nodes, focus, and inspect triples; double-click to open the resource
+        detail panel.</li>
+      <figure>
+        <img class="screenshot" src="graph.png" alt="DaVi overview dashboard screenshot">
+        <figcaption>Figure 4 — 3D Graph Builder.</figcaption>
+      </figure>
+      <li><strong>Filter Data</strong>
+      </li>
+      <figure>
+        <img class="screenshot" src="filter.png" alt="DaVi overview dashboard screenshot">
+        <figcaption>Figure 5 — Filter Data.</figcaption>
+      </figure>
+    </ol>
+  </section>
+
+  <footer>
+    <p>For issues or further customizations, open an issue in the
+      repository or ask the authors.</p>
+  </footer>
+</body>
+
+</html>
