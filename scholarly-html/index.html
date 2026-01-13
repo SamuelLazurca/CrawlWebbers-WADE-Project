@@ -48,9 +48,9 @@
       A key innovation of DaVi is its <strong> modular, ontology-driven architecture</strong>: the frontend
       does not contain hardcoded logic for visualizations but instead queries the ontology to dynamically render
       components based on the semantic definition of data views.
-      This report details the system's architecture, the custom knowledge models employed, the implementation of
+      This report details the system's architecture, the custom knowledge models employed and the implementation of
       inverse
-      relations for efficient querying, and the use of Lucene indexing for high-performance text search.
+      relations for efficient querying.
     </p>
   </section>
 
@@ -256,7 +256,7 @@
         By defining a <code>text:EntityMap</code> in the Fuseki configuration, we index properties like
         <code>schema:description</code> and <code>davi-mov:tagContent</code>.
         This allows the backend to use <code>text:query</code> for sub-millisecond keyword searches, essential for the
-        "Intelligent Filter" feature.
+        "Intelligent Filter" feature. But we didn't see a big improvement on our data.
       </p>
       <p>
         <strong>Statistics Computation</strong> is performed using <strong>tdbstats</strong> command-line tool to
