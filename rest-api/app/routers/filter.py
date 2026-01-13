@@ -28,6 +28,7 @@ def intelligent_search(
     - String: `CONTAINS`, `NOT_CONTAINS` (Case-insensitive)
     - Semantic: `TRANSITIVE` (Finds all children of a concept using `skos:broader` or `rdfs:subClassOf`)
     """
+    print(request)
     try:
         return build_intelligent_query(request)
     except Exception as e:
