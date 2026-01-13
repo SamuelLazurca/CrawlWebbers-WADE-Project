@@ -1,8 +1,6 @@
 import {type ClassValue, clsx} from 'clsx';
 
 export function cn(...inputs: ClassValue[]) {
-  // If you don't want to install tailwind-merge yet, just use: return clsx(inputs);
-  // But standard practice is usually:
   return clsx(inputs);
 }
 

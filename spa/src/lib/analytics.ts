@@ -17,10 +17,8 @@ export const getCustomAnalytics = async (
       return response.data.data;
     }
 
-    console.error("Failed to fetch custom analytics:", response.error);
     return [];
   } catch (error) {
-    console.error("Error fetching custom analytics:", error);
     return [];
   }
 };

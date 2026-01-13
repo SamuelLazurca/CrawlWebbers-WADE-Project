@@ -15,7 +15,6 @@ export const DatasetSelector: React.FC = () => {
     async function load() {
       const data = await getDatasets();
       setDatasets(data || []);
-      // Auto-select first if none selected
       if (!baseDataset && data && data.length > 0) {
         setBaseDataset(data[0]);
       }
@@ -35,7 +34,6 @@ export const DatasetSelector: React.FC = () => {
   return (
     <div className="p-4 space-y-4 border-b border-slate-800">
 
-      {/* --- DATASET SELECTOR --- */}
       <div className="space-y-1">
         <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">Dataset</label>
         <div className="relative">
@@ -82,7 +80,6 @@ export const DatasetSelector: React.FC = () => {
         </div>
       </div>
 
-      {/* --- VIEW SELECTOR --- */}
       {baseDataset && (
         <div className="space-y-1 animate-in fade-in slide-in-from-top-2 duration-300">
           <label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 ml-1">Data View</label>
@@ -133,7 +130,6 @@ export const DatasetSelector: React.FC = () => {
         </div>
       )}
 
-      {/* --- METADATA --- */}
       {baseDataset && (
         <div className="pt-2">
           {baseDataset.description && (

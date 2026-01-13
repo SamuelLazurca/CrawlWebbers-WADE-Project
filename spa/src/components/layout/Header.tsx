@@ -1,8 +1,16 @@
 import React from 'react';
-import {useFilterStore} from '../../stores/filterStore';
-import {useSidebarContext} from '../../context/sidebarContext';
-import {cn} from '../../lib/utils';
-import {ChevronRight, Filter, LayoutDashboard, Menu, Repeat, Share2, Wand2} from 'lucide-react';
+import { useFilterStore } from '../../stores/filterStore';
+import { useSidebarContext } from '../../context/sidebarContext';
+import { cn } from '../../lib/utils';
+import {
+  ChevronRight,
+  Filter,
+  LayoutDashboard,
+  Menu,
+  Repeat,
+  Share2,
+  Wand2,
+} from 'lucide-react';
 
 const TABS = [
   { id: 'presets' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -44,16 +52,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               Semantic Data Explorer
             </h1>
 
-            {/* Breadcrumbs for Context */}
             {baseDataset ? (
-              <div className="flex items-center gap-1.5 text-[10px] md:text-xs font-medium text-slate-400 animate-in fade-in slide-in-from-left-2">
-                <span className="truncate max-w-25 md:max-w-37.5">{baseDataset.name}</span>
+              <div className='flex items-center gap-1.5 text-[10px] md:text-xs font-medium text-slate-400 animate-in fade-in slide-in-from-left-2'>
+                <span className='truncate max-w-25 md:max-w-37.5'>
+                  {baseDataset.name}
+                </span>
                 {currentView && (
                   <>
-                    <ChevronRight size={10} className="text-slate-600" />
-                    <span className="text-emerald-400 truncate max-w-25 md:max-w-37.5">
-                                {currentView.label}
-                            </span>
+                    <ChevronRight size={10} className='text-slate-600' />
+                    <span className='text-emerald-400 truncate max-w-25 md:max-w-37.5'>
+                      {currentView.label}
+                    </span>
                   </>
                 )}
               </div>

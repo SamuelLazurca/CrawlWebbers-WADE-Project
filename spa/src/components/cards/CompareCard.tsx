@@ -94,12 +94,10 @@ const ComparisonColumn: React.FC<{
   highlightDifferencesWith?: Dataset[];
 }> = ({ title, dataset, highlightDifferencesWith = [] }) => {
 
-  // Helper to check for diffs on primitive properties only
   const isDifferent = (key: keyof Dataset) => {
     return highlightDifferencesWith.some((other) => {
       const valA = dataset[key];
       const valB = other[key];
-      // Skip comparison for arrays/objects like 'views'
       if (typeof valA === 'object' || typeof valB === 'object') return false;
       return valA !== valB;
     });

@@ -47,7 +47,6 @@ def get_custom_analytics(
     try:
         data = get_custom_analytics_query(dimension, metric, view_id, aggregation, limit)
 
-        # Calculate total only if it makes sense (e.g., not for AVG)
         total = 0
         if data and aggregation in [AggregationType.COUNT, AggregationType.SUM]:
             total = sum(d.value for d in data)

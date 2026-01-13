@@ -34,7 +34,6 @@ export const PresetChart: React.FC<PresetChartProps> = ({ option }) => {
 
         setData(result.data);
       } catch (error) {
-        console.error('Failed to load preset data:', error);
       } finally {
         setLoading(false);
       }
